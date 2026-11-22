@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>1000T GO PAGE</title>
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --panel: #1a1b1d;
+    --title: #26282b;
+    --btn: #2e3034;
+    --btn-hi: #3a3d42;
+    --border: #45484d;
+    --lcd: #101214;
+    --text: #e8e8e8;
+    --sub: #9a9da3;
+    --accent: #ffb000;
+    --ok: #3ddc84;
+    --danger: #e5484d;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+  body { display: flex; flex-direction: column; height: 100dvh; padding: 6px; gap: 6px; }
+  body.legend-mode { box-shadow: inset 0 0 0 3px var(--accent); }
+
+  /* top bar */
+  .bar {
+    display: flex; align-items: center; gap: 10px; height: 44px; flex: none;
+    padding: 0 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+  }
+  .brand { font-weight: 900; font-size: 15px; letter-spacing: .5px; }
+  .midi { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--sub); min-width: 0; }
+  .midi .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); flex: none; }
+  .midi .dot.on { background: var(--ok); }
+  .midi .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .spacer { flex: 1; }
+  .chip {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+    background: var(--lcd); border-radius: 4px;
+  }
+  .chip .k { font-size: 10px; font-weight: 700; color: var(--sub); }
+  .chip .v { font: 900 18px ui-monospace, Menlo, monospace; color: var(--accent); min-width: 22px; text-align: center; }
+  .chip .l { font-size: 12px; font-weight: 600; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip img { height: 26px; width: 26px; object-fit: contain; display: none; }
+  .bbtn {
+    height: 30px; padding: 0 12px; font-size: 11px; font-weight: 800; letter-spacing: .3px;
+    color: var(--text); background: var(--btn); border: 1px solid var(--border); border-radius: 4px;
+  }
+  .bbtn.on { background: var(--accent); color: #000; border-color: var(--accent); }
+  .bbtn.warn { border-color: var(--danger); color: #ffb3b5; }
+
+  /* window */
+  .window {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .window-title {
+    flex: none; height: 30px; display: flex; align-items: center; padding: 0 10px;
+    background: var(--title); font-size: 11px; font-weight: 800; color: var(--sub); letter-spacing: .5px;
+  }
+  .grid {
+    flex: 1; min-height: 0; padding: 6px; display: grid; gap: 5px;
+    grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(5, 1fr);
+  }
+
+  /* tile */
+  .tile {
+    position: relative; border-radius: 5px; background: var(--btn); border: 1px solid var(--border);
+    overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 14px 4px 6px;
+  }
+  .tile .strip { position: absolute; left: 0; right: 0; top: 0; height: 5px; }
+  .tile .num { position: absolute; left: 6px; top: 8px; font: 700 10px ui-monospace, Menlo, monospace; color: var(--sub); z-index: 2; }
+  .tile .leg {
+    font-size: 15px; font-weight: 700; text-align: center; line-height: 1.15;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;
+  }
+  .tile .pic { position: absolute; inset: 5px 0 0 0; width: 100%; height: calc(100% - 5px); object-fit: contain; display: none; pointer-events: none; }
+  .tile.has-pic .pic { display: block; }
+  .tile.has-pic .leg { display: none; }
+  .tile.empty .leg { color: rgba(154,157,163,.5); font-weight: 600; }
+  .tile.active { border: 2px solid var(--accent); }
+  .tile.pressed { filter: brightness(1.35); }
+
+  /* modal */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
+    align-items: center; justify-content: center; z-index: 10;
+  }
+  .scrim.open { display: flex; }
+  .dialog {
+    width: min(520px, 92vw); max-height: 96dvh; background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.6); display: flex; flex-direction: column;
+  }
+  .dialog.wide { width: min(960px, 97vw); }
+  .dialog header {
+    flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+    background: var(--title); font-weight: 800; font-size: 14px;
+  }
+  .dialog .body { padding: 14px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .lbl { font-size: 11px; font-weight: 800; color: var(--sub); letter-spacing: .5px; margin-bottom: 6px; }
+  input[type=text], select, textarea {
+    width: 100%; font-size: 17px; padding: 10px; color: var(--text); background: var(--lcd);
+    border: 1px solid var(--border); border-radius: 5px; outline: none; -webkit-user-select: text; user-select: text;
+  }
+  textarea { font: 12px ui-monospace, Menlo, monospace; height: 90px; resize: none; }
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .sw { height: 34px; border-radius: 5px; border: 3px solid transparent; font-size: 10px; font-weight: 800; color: #fff;
+        display: flex; align-items: center; justify-content: center; }
+  .sw.sel { border-color: #fff; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row .bbtn { height: 40px; font-size: 13px; flex: 1; }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper .v { font: 900 20px ui-monospace, Menlo, monospace; color: var(--accent); min-width: 34px; text-align: center; }
+  .msg { font-size: 11px; color: var(--sub); min-height: 14px; }
+
+  /* legend editor */
+  .editor { display: flex; gap: 14px; align-items: flex-start; }
+  .canvas-wrap {
+    flex: none; width: min(420px, 46vw); aspect-ratio: 1 / 1; position: relative;
+    border-radius: 6px; border: 2px solid var(--border); overflow: hidden; background: var(--btn);
+  }
+  .canvas-wrap .strip { position: absolute; left: 0; right: 0; top: 0; height: 6px; z-index: 1; pointer-events: none; }
+  .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  .tools { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .pens { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .pen { height: 34px; border-radius: 5px; border: 3px solid transparent; }
+  .pen.sel { border-color: #fff; }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row .val { font: 800 13px ui-monospace, Menlo, monospace; color: var(--accent); width: 42px; text-align: right; }
+  input[type=range] { flex: 1; height: 34px; accent-color: var(--accent); }
+  .preview { width: 44px; height: 44px; flex: none; border-radius: 5px; background: var(--lcd);
+             display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+  .preview i { display: block; border-radius: 50%; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="brand">1000T GO PAGE</div>
+    <div class="midi"><span class="dot" id="midiDot"></span><span class="name" id="midiName">NO MIDI</span><span id="midiCh">CH 1</span></div>
+    <div class="spacer"></div>
+    <div class="chip"><span class="k">PB PAGE</span><span class="v" id="curNum">--</span><img id="curPic" alt=""><span class="l" id="curLeg"></span></div>
+    <div class="spacer"></div>
+    <button class="bbtn" id="btnLegend">SET LEGEND</button>
+    <button class="bbtn" id="btnSetup">SETUP</button>
+  </div>
+
+  <div class="window">
+    <div class="window-title">GO PAGE</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- Set Legend -->
+  <div class="scrim" id="legendScrim">
+    <div class="dialog wide">
+      <header><span id="legendTitle">Page 1</span><button class="bbtn on" id="legendDone">DONE</button></header>
+      <div class="body">
+        <div class="editor">
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="pad" width="400" height="400"></canvas>
+            <div class="strip" id="padStrip"></div>
+          </div>
+          <div class="tools">
+            <div>
+              <div class="lbl">PEN COLOUR</div>
+              <div class="pens" id="pens"></div>
+            </div>
+            <div>
+              <div class="lbl">BRIGHTNESS</div>
+              <div class="slider-row"><input type="range" id="bright" min="10" max="100" step="1"><span class="val" id="brightVal">100%</span></div>
+            </div>
+            <div>
+              <div class="lbl">LINE WIDTH</div>
+              <div class="slider-row">
+                <input type="range" id="width" min="2" max="40" step="1">
+                <span class="val" id="widthVal">8</span>
+                <div class="preview"><i id="widthDot"></i></div>
+              </div>
+            </div>
+            <div class="row">
+              <button class="bbtn on" id="toolPen">PEN</button>
+              <button class="bbtn" id="toolEraser">ERASER</button>
+              <button class="bbtn" id="padUndo">UNDO</button>
+              <button class="bbtn warn" id="padClear">ALL CLEAR</button>
+            </div>
+          </div>
+        </div>
+        <div class="editor">
+          <div style="flex:1;min-width:0">
+            <div class="lbl">TEXT (shown when no drawing)</div>
+            <input type="text" id="legendText" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="lbl">BUTTON COLOUR</div>
+            <div class="swatches" id="swatches"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup -->
+  <div class="scrim" id="setupScrim">
+    <div class="dialog">
+      <header><span>SETUP</span><button class="bbtn on" id="setupDone">DONE</button></header>
+      <div class="body">
+        <div><div class="lbl">MIDI OUTPUT</div><select id="outSel"></select></div>
+        <div>
+          <div class="lbl">MIDI CHANNEL</div>
+          <div class="stepper"><button class="bbtn" id="chDown">−</button><span class="v" id="chVal">1</span><button class="bbtn" id="chUp">+</button></div>
+        </div>
+        <div>
+          <div class="lbl">BACKUP</div>
+          <textarea id="backupText" spellcheck="false"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="bbtn" id="backupCopy">COPY</button>
+            <button class="bbtn" id="backupLoad">LOAD</button>
+          </div>
+          <div class="msg" id="backupMsg"></div>
+        </div>
+        <div class="msg">V1.0</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+  const PAGES = 40;
+  const KEY = "1000t-gopage-v1";
+  const PAD = 400;               // drawing resolution (px)
+  const COLORS = [               // button colours
+    ["none", "#5a5d63"], ["red", "#e53935"], ["orange", "#fb8c00"], ["yellow", "#fdd835"],
+    ["lime", "#9ccc65"], ["green", "#43a047"], ["cyan", "#26c6da"], ["blue", "#1e88e5"],
+    ["purple", "#8e24aa"], ["magenta", "#d81b60"], ["pink", "#f48fb1"], ["white", "#eceff1"]
+  ];
+  const PENS = [                 // pen base colours (full brightness)
+    [255,255,255], [255,40,40], [255,140,0], [255,230,0], [120,255,60],
+    [0,230,120], [0,220,255], [40,110,255], [170,60,255], [255,40,170]
+  ];
+  const colorHex = (name) => (COLORS.find(c => c[0] === name) || COLORS[0])[1];
+
+  // ---------- state ----------
+  const blankLegend = () => ({ text: "", color: "none", img: "" });
+  const blank = () => ({
+    legends: Array.from({ length: PAGES }, blankLegend),
+    channel: 1,
+    outputId: "all",
+    pen: { color: 0, bright: 100, width: 8 }
+  });
+  function normalize(s) {
+    const b = blank();
+    if (!s || typeof s !== "object") return b;
+    if (Array.isArray(s.legends)) {
+      for (let i = 0; i < PAGES; i++) {
+        const l = s.legends[i];
+        if (l && typeof l === "object") {
+          b.legends[i] = {
+            text: typeof l.text === "string" ? l.text.slice(0, 24) : "",
+            color: COLORS.some(c => c[0] === l.color) ? l.color : "none",
+            img: typeof l.img === "string" && l.img.startsWith("data:image/png") ? l.img : ""
+          };
+        }
+      }
+    }
+    const ch = parseInt(s.channel, 10);
+    if (ch >= 1 && ch <= 16) b.channel = ch;
+    if (typeof s.outputId === "string") b.outputId = s.outputId;
+    if (s.pen && typeof s.pen === "object") {
+      const c = parseInt(s.pen.color, 10), br = parseInt(s.pen.bright, 10), w = parseInt(s.pen.width, 10);
+      if (c >= 0 && c < PENS.length) b.pen.color = c;
+      if (br >= 10 && br <= 100) b.pen.bright = br;
+      if (w >= 2 && w <= 40) b.pen.width = w;
+    }
+    return b;
+  }
+  let state = blank();
+  try { state = normalize(JSON.parse(localStorage.getItem(KEY) || "null")); } catch (e) { state = blank(); }
+  let saveMsgShown = false;
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) {
+      if (!saveMsgShown) { saveMsgShown = true; document.getElementById("midiName").textContent = "STORAGE FULL"; }
+    }
+  }
+
+  let current = 0;          // 0 = unknown
+  let legendMode = false;
+  let editing = 0;          // page being edited
+
+  // ---------- MIDI ----------
+  let midi = null;
+  function outputs() {
+    if (!midi) return [];
+    const list = [];
+    midi.outputs.forEach(o => list.push(o));
+    return list;
+  }
+  function targets() {
+    const outs = outputs();
+    if (state.outputId === "all") return outs;
+    return outs.filter(o => o.id === state.outputId);
+  }
+  function send(bytes) {
+    const t = targets();
+    t.forEach(o => { try { o.send(bytes); } catch (e) {} });
+    return t.length > 0;
+  }
+  function refreshMidiUI() {
+    const dot = document.getElementById("midiDot");
+    const name = document.getElementById("midiName");
+    document.getElementById("midiCh").textContent = "CH " + state.channel;
+    if (!midi) { dot.classList.remove("on"); name.textContent = "WEB MIDI NOT AVAILABLE"; return; }
+    const t = targets();
+    dot.classList.toggle("on", t.length > 0);
+    if (state.outputId === "all") {
+      name.textContent = t.length === 0 ? "NO MIDI DEVICE" : (t.length === 1 ? t[0].name : "ALL (" + t.length + ")");
+    } else {
+      name.textContent = t.length ? t[0].name : "NOT CONNECTED";
+    }
+    const sel = document.getElementById("outSel");
+    sel.innerHTML = "";
+    const all = document.createElement("option");
+    all.value = "all"; all.textContent = "All Outputs";
+    sel.appendChild(all);
+    let found = state.outputId === "all";
+    outputs().forEach(o => {
+      const op = document.createElement("option");
+      op.value = o.id; op.textContent = o.name || o.id;
+      sel.appendChild(op);
+      if (o.id === state.outputId) found = true;
+    });
+    if (!found) {
+      const op = document.createElement("option");
+      op.value = state.outputId; op.textContent = "(Not connected)";
+      sel.appendChild(op);
+    }
+    sel.value = state.outputId;
+  }
+  if (navigator.requestMIDIAccess) {
+    navigator.requestMIDIAccess({ sysex: false }).then(access => {
+      midi = access;
+      midi.onstatechange = refreshMidiUI;
+      refreshMidiUI();
+    }, () => { midi = null; refreshMidiUI(); });
+  }
+
+  // MINI 1000T: switch PB page = $Bn + (page-1) + 00
+  function goPage(p) {
+    current = p;
+    send([0xB0 | (state.channel - 1), p - 1, 0x00]);
+    render();
+  }
+
+  // ---------- render ----------
+  const grid = document.getElementById("grid");
+  const tiles = [];
+  for (let i = 1; i <= PAGES; i++) {
+    const el = document.createElement("div");
+    el.className = "tile";
+    el.innerHTML = '<div class="strip"></div><img class="pic" alt=""><div class="num">' + i + '</div><div class="leg"></div>';
+    el.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      el.classList.add("pressed");
+      if (!legendMode) goPage(i);
+    });
+    el.addEventListener("click", () => { if (legendMode) openLegend(i); });
+    const up = () => el.classList.remove("pressed");
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    el.addEventListener("pointerleave", up);
+    grid.appendChild(el);
+    tiles.push(el);
+  }
+  function tileBackground(color, active) {
+    const tint = active ? 40 : (color === "none" ? 0 : 16);
+    return tint ? "color-mix(in srgb, " + colorHex(color) + " " + tint + "%, #2e3034)" : "";
+  }
+  function renderTile(idx) {
+    const el = tiles[idx];
+    const p = idx + 1;
+    const l = state.legends[idx];
+    el.querySelector(".strip").style.background = colorHex(l.color);
+    el.querySelector(".leg").textContent = l.text || ("Page " + p);
+    const pic = el.querySelector(".pic");
+    if (l.img) { if (pic.getAttribute("src") !== l.img) pic.src = l.img; } else { pic.removeAttribute("src"); }
+    el.classList.toggle("has-pic", !!l.img);
+    el.classList.toggle("empty", !l.text && !l.img);
+    el.classList.toggle("active", p === current);
+    el.style.background = tileBackground(l.color, p === current);
+  }
+  function render() {
+    for (let i = 0; i < PAGES; i++) renderTile(i);
+    document.getElementById("curNum").textContent = current ? String(current) : "--";
+    const cl = current ? state.legends[current - 1] : null;
+    document.getElementById("curLeg").textContent = cl ? cl.text : "";
+    const cp = document.getElementById("curPic");
+    if (cl && cl.img) { cp.src = cl.img; cp.style.display = "block"; } else { cp.style.display = "none"; }
+    document.body.classList.toggle("legend-mode", legendMode);
+    document.getElementById("btnLegend").classList.toggle("on", legendMode);
+  }
+
+  // ---------- drawing pad ----------
+  const pad = document.getElementById("pad");
+  const ctx = pad.getContext("2d");
+  const canvasWrap = document.getElementById("canvasWrap");
+  let tool = "pen";
+  let undoStack = [];
+  let drawing = null;   // { id, last, mid }
+
+  function penColor() {
+    const [r, g, b] = PENS[state.pen.color];
+    const k = state.pen.bright / 100;
+    return "rgb(" + Math.round(r * k) + "," + Math.round(g * k) + "," + Math.round(b * k) + ")";
+  }
+  function padPoint(ev) {
+    const r = pad.getBoundingClientRect();
+    return { x: (ev.clientX - r.left) * PAD / r.width, y: (ev.clientY - r.top) * PAD / r.height };
+  }
+  function scaledWidth() {
+    // width slider is in tile pixels; the pad is drawn at 400px for a ~140px tile
+    return state.pen.width * PAD / 140;
+  }
+  function setupStroke() {
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = scaledWidth();
+    ctx.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
+    ctx.strokeStyle = penColor();
+    ctx.fillStyle = penColor();
+  }
+  function pushUndo() {
+    try {
+      undoStack.push(ctx.getImageData(0, 0, PAD, PAD));
+      if (undoStack.length > 30) undoStack.shift();
+    } catch (e) {}
+  }
+  pad.addEventListener("pointerdown", (ev) => {
+    if (drawing) return;               // one finger at a time (palm / second touch ignored)
+    ev.preventDefault();
+    try { pad.setPointerCapture(ev.pointerId); } catch (e) {}
+    pushUndo();
+    setupStroke();
+    const p = padPoint(ev);
+    drawing = { id: ev.pointerId, last: p, mid: p };
+    // dot for a single tap
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+    if (tool === "eraser") { ctx.fillStyle = "#000"; }
+    ctx.fill();
+  });
+  pad.addEventListener("pointermove", (ev) => {
+    if (!drawing || ev.pointerId !== drawing.id) return;
+    ev.preventDefault();
+    const events = ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev];
+    for (const e of (events.length ? events : [ev])) {
+      const p = padPoint(e);
+      const mid = { x: (drawing.last.x + p.x) / 2, y: (drawing.last.y + p.y) / 2 };
+      ctx.beginPath();
+      ctx.moveTo(drawing.mid.x, drawing.mid.y);
+      ctx.quadraticCurveTo(drawing.last.x, drawing.last.y, mid.x, mid.y);
+      ctx.stroke();
+      drawing.last = p;
+      drawing.mid = mid;
+    }
+  });
+  function endStroke(ev) {
+    if (!drawing || ev.pointerId !== drawing.id) return;
+    ctx.beginPath();
+    ctx.moveTo(drawing.mid.x, drawing.mid.y);
+    ctx.lineTo(drawing.last.x, drawing.last.y);
+    ctx.stroke();
+    drawing = null;
+    ctx.globalCompositeOperation = "source-over";
+    commitPad();
+  }
+  pad.addEventListener("pointerup", endStroke);
+  pad.addEventListener("pointercancel", endStroke);
+
+  function padIsEmpty() {
+    try {
+      const d = ctx.getImageData(0, 0, PAD, PAD).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) return false;
+      return true;
+    } catch (e) { return false; }
+  }
+  function commitPad() {
+    const l = state.legends[editing - 1];
+    l.img = padIsEmpty() ? "" : pad.toDataURL("image/png");
+    save();
+    renderTile(editing - 1);
+  }
+  function loadPad(src) {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, PAD, PAD);
+    if (!src) return;
+    const im = new Image();
+    im.onload = () => { ctx.drawImage(im, 0, 0, PAD, PAD); };
+    im.src = src;
+  }
+
+  // tools UI
+  const pens = document.getElementById("pens");
+  PENS.forEach((rgb, i) => {
+    const d = document.createElement("div");
+    d.className = "pen";
+    d.style.background = "rgb(" + rgb.join(",") + ")";
+    d.addEventListener("click", () => {
+      state.pen.color = i; save();
+      setTool("pen");
+      syncTools();
+    });
+    pens.appendChild(d);
+  });
+  const bright = document.getElementById("bright");
+  const width = document.getElementById("width");
+  bright.addEventListener("input", () => { state.pen.bright = parseInt(bright.value, 10); save(); syncTools(); });
+  width.addEventListener("input", () => { state.pen.width = parseInt(width.value, 10); save(); syncTools(); });
+  function setTool(t) {
+    tool = t;
+    document.getElementById("toolPen").classList.toggle("on", t === "pen");
+    document.getElementById("toolEraser").classList.toggle("on", t === "eraser");
+  }
+  document.getElementById("toolPen").addEventListener("click", () => setTool("pen"));
+  document.getElementById("toolEraser").addEventListener("click", () => setTool("eraser"));
+  document.getElementById("padUndo").addEventListener("click", () => {
+    const img = undoStack.pop();
+    if (!img) return;
+    ctx.putImageData(img, 0, 0);
+    commitPad();
+  });
+  document.getElementById("padClear").addEventListener("click", () => {
+    pushUndo();
+    ctx.clearRect(0, 0, PAD, PAD);
+    commitPad();
+  });
+  function syncTools() {
+    pens.querySelectorAll(".pen").forEach((d, i) => d.classList.toggle("sel", i === state.pen.color));
+    bright.value = state.pen.bright;
+    width.value = state.pen.width;
+    document.getElementById("brightVal").textContent = state.pen.bright + "%";
+    document.getElementById("widthVal").textContent = state.pen.width;
+    const dot = document.getElementById("widthDot");
+    const shown = Math.max(2, Math.min(40, state.pen.width));
+    dot.style.width = shown + "px";
+    dot.style.height = shown + "px";
+    dot.style.background = penColor();
+  }
+  function syncPadLook() {
+    const l = state.legends[editing - 1];
+    canvasWrap.style.background = tileBackground(l.color, false) || "var(--btn)";
+    document.getElementById("padStrip").style.background = colorHex(l.color);
+  }
+
+  // ---------- Set Legend dialog ----------
+  const legendScrim = document.getElementById("legendScrim");
+  const legendText = document.getElementById("legendText");
+  const swatches = document.getElementById("swatches");
+  COLORS.forEach(([name, hex]) => {
+    const s = document.createElement("div");
+    s.className = "sw"; s.style.background = hex; s.dataset.color = name;
+    if (name === "none") s.textContent = "NONE";
+    s.addEventListener("click", () => {
+      state.legends[editing - 1].color = name; save(); syncSwatches(); syncPadLook(); renderTile(editing - 1);
+    });
+    swatches.appendChild(s);
+  });
+  function syncSwatches() {
+    const c = state.legends[editing - 1].color;
+    swatches.querySelectorAll(".sw").forEach(s => s.classList.toggle("sel", s.dataset.color === c));
+  }
+  function openLegend(p) {
+    editing = p;
+    undoStack = [];
+    drawing = null;
+    document.getElementById("legendTitle").textContent = "SET LEGEND — Page " + p;
+    legendText.value = state.legends[p - 1].text;
+    loadPad(state.legends[p - 1].img);
+    setTool("pen");
+    syncSwatches();
+    syncTools();
+    syncPadLook();
+    legendScrim.classList.add("open");
+  }
+  function closeLegend() { legendText.blur(); legendScrim.classList.remove("open"); render(); }
+  legendText.addEventListener("input", () => {
+    state.legends[editing - 1].text = legendText.value.slice(0, 24); save(); renderTile(editing - 1);
+  });
+  legendText.addEventListener("keydown", (e) => { if (e.key === "Enter") legendText.blur(); });
+  document.getElementById("legendDone").addEventListener("click", closeLegend);
+
+  document.getElementById("btnLegend").addEventListener("click", () => { legendMode = !legendMode; render(); });
+
+  // ---------- Setup ----------
+  const setupScrim = document.getElementById("setupScrim");
+  const backupText = document.getElementById("backupText");
+  const backupMsg = document.getElementById("backupMsg");
+  function openSetup() {
+    document.getElementById("chVal").textContent = state.channel;
+    backupText.value = JSON.stringify(state);
+    backupMsg.textContent = "";
+    refreshMidiUI();
+    setupScrim.classList.add("open");
+  }
+  document.getElementById("btnSetup").addEventListener("click", openSetup);
+  document.getElementById("setupDone").addEventListener("click", () => setupScrim.classList.remove("open"));
+  setupScrim.addEventListener("click", (e) => { if (e.target === setupScrim) setupScrim.classList.remove("open"); });
+  document.getElementById("outSel").addEventListener("change", (e) => {
+    state.outputId = e.target.value; save(); refreshMidiUI();
+  });
+  function setCh(v) {
+    state.channel = Math.min(16, Math.max(1, v)); save();
+    document.getElementById("chVal").textContent = state.channel;
+    refreshMidiUI();
+  }
+  document.getElementById("chDown").addEventListener("click", () => setCh(state.channel - 1));
+  document.getElementById("chUp").addEventListener("click", () => setCh(state.channel + 1));
+  document.getElementById("backupCopy").addEventListener("click", () => {
+    backupText.value = JSON.stringify(state);
+    backupText.select();
+    const done = () => { backupMsg.textContent = "COPIED"; };
+    const fallback = () => { try { document.execCommand("copy"); done(); } catch (e) { backupMsg.textContent = "SELECT AND COPY"; } };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(backupText.value).then(done, fallback);
+    } else { fallback(); }
+  });
+  document.getElementById("backupLoad").addEventListener("click", () => {
+    try {
+      state = normalize(JSON.parse(backupText.value));
+      save(); render(); refreshMidiUI();
+      document.getElementById("chVal").textContent = state.channel;
+      backupMsg.textContent = "LOADED";
+    } catch (e) {
+      backupMsg.textContent = "INVALID DATA";
+    }
+  });
+
+  // block pinch / double-tap zoom
+  document.addEventListener("gesturestart", (e) => e.preventDefault());
+  document.addEventListener("dblclick", (e) => e.preventDefault());
+
+  render();
+  refreshMidiUI();
+})();
+</script>
+</body>
+</html>
