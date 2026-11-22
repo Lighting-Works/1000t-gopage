@@ -62,6 +62,23 @@
   .chip .v { font: 900 24px ui-monospace, Menlo, monospace; color: var(--accent); min-width: 30px; text-align: center; }
   .chip .l { font-size: 16px; font-weight: 700; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chip img { height: 36px; width: 40px; object-fit: contain; display: none; }
+  .showchip { cursor: pointer; border: 1px solid #3a3d42; }
+  .showchip .l { color: #9fd0ff; max-width: 200px; }
+  .showchip:active { filter: brightness(1.3); }
+
+  /* Shows window */
+  #showsWin { width: min(780px, 95vw); }
+  .showlist { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .rows { background: #0d0e10; border: 1px solid var(--border); border-radius: 6px; overflow: auto; max-height: 46vh; min-height: 180px; }
+  .srow { display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 14px; font-size: 18px; font-weight: 700;
+          border-bottom: 1px solid #23262a; }
+  .srow.sel { background: linear-gradient(var(--act-top), var(--act-bot)); }
+  .srow .tag { margin-left: auto; font-size: 11px; font-weight: 800; color: #111; background: var(--accent); border-radius: 4px; padding: 3px 7px; }
+  .srow .cnt { font-size: 12px; color: var(--sub); font-weight: 600; }
+  .hold { position: relative; overflow: hidden; }
+  .hold .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(229,72,77,.75); pointer-events: none; }
+  .hold.holding .fill { width: 100%; transition: width .8s linear; }
+  .hold span { position: relative; }
 
   /* workspace window */
   .window {
@@ -182,6 +199,7 @@
     <div class="brand">1000T GO PAGE</div>
     <div class="midi"><span class="dot" id="midiDot"></span><span class="name" id="midiName">NO MIDI</span><span id="midiCh">CH 1</span></div>
     <div class="spacer"></div>
+    <div class="chip showchip" id="showChip"><span class="k">SHOW</span><span class="l" id="showName">—</span></div>
     <div class="chip"><span class="k">PB PAGE</span><span class="v" id="curNum">--</span><img id="curPic" alt=""><span class="l" id="curLeg"></span></div>
     <div class="spacer"></div>
     <button class="key" id="btnLegend">Set Legend</button>
@@ -281,6 +299,33 @@
   <div class="pfoot"><div class="swatch" id="penSwatch"></div><span class="pval" id="penVal"></span></div>
 </div>
 
+<!-- Shows -->
+<div class="scrim" id="showsScrim">
+  <div class="dwin" id="showsWin">
+    <div class="wtitle"><span>Shows</span><button class="key xbtn" id="showsX">✕</button></div>
+    <div class="dbody">
+      <div class="showlist">
+        <div>
+          <div class="lbl">SHOW NAME</div>
+          <input type="text" id="showNameInput" maxlength="32" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="rows" id="showRows"></div>
+        <div class="msg" id="showsMsg"></div>
+      </div>
+      <div class="softkeys">
+        <button class="key" id="skLoad"><b>A</b>Load</button>
+        <button class="key" id="skNew"><b>B</b>New Show</button>
+        <button class="key" id="skCopy"><b>C</b>Copy</button>
+        <button class="key" id="skExport"><b>D</b>Export</button>
+        <button class="key" id="skImport"><b>E</b>Import</button>
+        <div style="flex:1"></div>
+        <button class="key hold" id="skDelete"><div class="fill"></div><span>Hold to Delete</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+<input type="file" id="importFile" accept=".json,application/json" style="display:none">
+
 <!-- Setup -->
 <div class="scrim" id="setupScrim">
   <div class="dwin" style="width:min(560px,94vw)">
@@ -296,12 +341,12 @@
         </div>
       </div>
       <div>
-        <div class="lbl">BACKUP</div>
+        <div class="lbl">BACKUP (CURRENT SHOW)</div>
         <textarea id="backupText" spellcheck="false"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px"><button class="key" id="backupCopy">Copy</button><button class="key" id="backupLoad">Load</button></div>
         <div class="msg" id="backupMsg"></div>
       </div>
-      <div class="msg">V2.1</div>
+      <div class="msg">V3.0</div>
     </div>
   </div>
 </div>
@@ -345,47 +390,112 @@
 
   // ---------- state ----------
   const blankLegend = () => ({ text: "", halo: "", img: "" });
-  const blank = () => ({
-    legends: Array.from({ length: PAGES }, blankLegend),
-    channel: 1,
-    outputId: "all",
-    pen: { h: 0, s: 1, v: 1, size: 8 }
-  });
+  const blankLegends = () => Array.from({ length: PAGES }, blankLegend);
   const isHex = (h) => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h);
-  function normalize(s) {
-    const b = blank();
-    if (!s || typeof s !== "object") return b;
-    if (Array.isArray(s.legends)) {
-      for (let i = 0; i < PAGES; i++) {
-        const l = s.legends[i];
-        if (!l || typeof l !== "object") continue;
-        let halo = isHex(l.halo) ? l.halo : "";
-        if (!halo && typeof l.color === "string" && OLD_COLORS[l.color]) halo = OLD_COLORS[l.color]; // V1.x button colour -> halo
-        b.legends[i] = {
-          text: typeof l.text === "string" ? l.text.slice(0, 24) : "",
-          halo,
-          img: typeof l.img === "string" && l.img.startsWith("data:image/png") ? l.img : ""
-        };
-      }
+  function normalizeLegends(arr) {
+    const out = blankLegends();
+    if (!Array.isArray(arr)) return out;
+    for (let i = 0; i < PAGES; i++) {
+      const l = arr[i];
+      if (!l || typeof l !== "object") continue;
+      let halo = isHex(l.halo) ? l.halo : "";
+      if (!halo && typeof l.color === "string" && OLD_COLORS[l.color]) halo = OLD_COLORS[l.color]; // V1.x button colour -> halo
+      out[i] = {
+        text: typeof l.text === "string" ? l.text.slice(0, 24) : "",
+        halo,
+        img: typeof l.img === "string" && l.img.startsWith("data:image/png") ? l.img : ""
+      };
     }
-    const ch = parseInt(s.channel, 10);
-    if (ch >= 1 && ch <= 16) b.channel = ch;
-    if (typeof s.outputId === "string") b.outputId = s.outputId;
-    const p = s.pen;
+    return out;
+  }
+  function normalizePen(p) {
+    const b = { h: 0, s: 1, v: 1, size: 8 };
     if (p && typeof p === "object") {
       if (typeof p.h === "number" && typeof p.s === "number" && typeof p.v === "number") {
-        b.pen.h = Math.min(360, Math.max(0, p.h)); b.pen.s = Math.min(1, Math.max(0, p.s)); b.pen.v = Math.min(1, Math.max(0, p.v));
+        b.h = Math.min(360, Math.max(0, p.h)); b.s = Math.min(1, Math.max(0, p.s)); b.v = Math.min(1, Math.max(0, p.v));
       }
       const sz = parseInt(p.size != null ? p.size : p.width, 10);
-      if (sz >= 1 && sz <= 40) b.pen.size = sz;
+      if (sz >= 1 && sz <= 40) b.size = sz;
     }
     return b;
   }
-  let state = blank();
-  try { state = normalize(JSON.parse(localStorage.getItem(KEY) || "null")); } catch (e) { state = blank(); }
+  const newId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  // state = the loaded show's legends + console-wide settings (MIDI / pen are shared by all shows)
+  let state = { legends: blankLegends(), channel: 1, outputId: "all", pen: normalizePen(null) };
+  let meta = null;   // { current, order:[ids], names:{id:name}, channel, outputId, pen }
+  let ready = false;
+
+  // ---------- storage (IndexedDB, falls back to localStorage) ----------
+  const DB_NAME = "1000t-gopage", STORE = "kv";
+  let dbp = null;
+  function idb() {
+    if (!dbp) dbp = new Promise((res, rej) => {
+      if (!window.indexedDB) { rej(new Error("no idb")); return; }
+      const r = indexedDB.open(DB_NAME, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return dbp;
+  }
+  async function kvGet(k) {
+    try {
+      const db = await idb();
+      return await new Promise((res, rej) => { const q = db.transaction(STORE).objectStore(STORE).get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    } catch (e) { try { return JSON.parse(localStorage.getItem("kv:" + k) || "null"); } catch (x) { return null; } }
+  }
+  async function kvSet(k, v) {
+    try {
+      const db = await idb();
+      await new Promise((res, rej) => { const t = db.transaction(STORE, "readwrite"); t.objectStore(STORE).put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+    } catch (e) {
+      try { localStorage.setItem("kv:" + k, JSON.stringify(v)); } catch (x) { $("midiName").textContent = "STORAGE FULL"; }
+    }
+  }
+  async function kvDel(k) {
+    try {
+      const db = await idb();
+      await new Promise((res, rej) => { const t = db.transaction(STORE, "readwrite"); t.objectStore(STORE).delete(k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); });
+    } catch (e) { try { localStorage.removeItem("kv:" + k); } catch (x) {} }
+  }
+  let saveChain = Promise.resolve();
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { $("midiName").textContent = "STORAGE FULL"; }
+    if (!ready) return saveChain;
+    meta.channel = state.channel; meta.outputId = state.outputId; meta.pen = state.pen;
+    const id = meta.current;
+    const showData = { legends: state.legends.map(l => Object.assign({}, l)) };
+    const metaCopy = JSON.parse(JSON.stringify(meta));
+    saveChain = saveChain.then(() => kvSet("show:" + id, showData)).then(() => kvSet("meta", metaCopy));
+    return saveChain;
+  }
+  async function init() {
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    let m = await kvGet("meta");
+    if (!m || !Array.isArray(m.order) || !m.order.length) {
+      // first run of V3: bring over the V1/V2 data as "Default"
+      let old = null;
+      try { old = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+      const id = newId();
+      const ch = old && parseInt(old.channel, 10);
+      m = { current: id, order: [id], names: { [id]: "Default" },
+            channel: ch >= 1 && ch <= 16 ? ch : 1,
+            outputId: old && typeof old.outputId === "string" ? old.outputId : "all",
+            pen: normalizePen(old && old.pen) };
+      await kvSet("show:" + id, { legends: normalizeLegends(old && old.legends) });
+      await kvSet("meta", m);
+    }
+    m.order = m.order.filter(id => typeof id === "string");
+    if (!m.names || typeof m.names !== "object") m.names = {};
+    m.order.forEach((id, i) => { if (!m.names[id]) m.names[id] = "Show " + (i + 1); });
+    if (!m.order.includes(m.current)) m.current = m.order[0];
+    meta = m;
+    const sh = await kvGet("show:" + meta.current);
+    const ch = parseInt(meta.channel, 10);
+    state = { legends: normalizeLegends(sh && sh.legends), channel: ch >= 1 && ch <= 16 ? ch : 1,
+              outputId: typeof meta.outputId === "string" ? meta.outputId : "all", pen: normalizePen(meta.pen) };
+    ready = true;
+    render(); refreshMidiUI();
   }
 
   let current = 0;
@@ -457,6 +567,7 @@
     if (cl && cl.img) { cp.src = cl.img; cp.style.display = "block"; } else cp.style.display = "none";
     document.body.classList.toggle("legend-mode", legendMode);
     $("btnLegend").classList.toggle("on", legendMode);
+    $("showName").textContent = meta ? meta.names[meta.current] : "—";
   }
 
   // ---------- Titan classic colour picker (hue x saturation field + intensity slider) ----------
@@ -512,6 +623,7 @@
   const legendScrim = $("legendScrim"), legendText = $("legendText"), legendPreview = $("legendPreview");
   function paintPreview() { paintTile(legendPreview, work, editing, false); }
   function openLegend(p) {
+    if (!ready) return;
     editing = p;
     work = Object.assign({}, state.legends[p - 1]);
     $("legendTitle").textContent = "Set Legend — Page " + p;
@@ -677,7 +789,7 @@
   // ---------- Setup ----------
   const setupScrim = $("setupScrim"), backupText = $("backupText"), backupMsg = $("backupMsg");
   $("btnSetup").addEventListener("click", () => {
-    $("chVal").textContent = state.channel; backupText.value = JSON.stringify(state); backupMsg.textContent = "";
+    $("chVal").textContent = state.channel; backupText.value = showJSON(); backupMsg.textContent = "";
     refreshMidiUI(); setupScrim.classList.add("open");
   });
   $("setupX").addEventListener("click", () => setupScrim.classList.remove("open"));
@@ -686,15 +798,153 @@
   $("chDown").addEventListener("click", () => setCh(state.channel - 1));
   $("chUp").addEventListener("click", () => setCh(state.channel + 1));
   $("backupCopy").addEventListener("click", () => {
-    backupText.value = JSON.stringify(state); backupText.select();
+    backupText.value = showJSON(); backupText.select();
     const done = () => { backupMsg.textContent = "COPIED"; };
     const fb = () => { try { document.execCommand("copy"); done(); } catch (e) { backupMsg.textContent = "SELECT AND COPY"; } };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(backupText.value).then(done, fb); else fb();
   });
   $("backupLoad").addEventListener("click", () => {
-    try { state = normalize(JSON.parse(backupText.value)); save(); render(); refreshMidiUI(); $("chVal").textContent = state.channel; backupMsg.textContent = "LOADED"; }
+    try {
+      const d = JSON.parse(backupText.value);
+      if (!d || !Array.isArray(d.legends)) throw new Error("bad");
+      state.legends = normalizeLegends(d.legends); save(); render(); backupMsg.textContent = "LOADED INTO " + meta.names[meta.current];
+    }
     catch (e) { backupMsg.textContent = "INVALID DATA"; }
   });
+
+  // ---------- Shows ----------
+  function showJSON(name, legends) {
+    return JSON.stringify({ app: "1000T GO PAGE", format: 3, name: name || meta.names[meta.current], legends: legends || state.legends });
+  }
+  const showsScrim = $("showsScrim"), showRows = $("showRows"), showNameInput = $("showNameInput"), showsMsg = $("showsMsg");
+  let selShow = null;
+  function drawShowRows() {
+    showRows.innerHTML = "";
+    meta.order.forEach((id) => {
+      const r = document.createElement("div");
+      r.className = "srow" + (id === selShow ? " sel" : "");
+      const nm = document.createElement("span"); nm.textContent = meta.names[id]; r.appendChild(nm);
+      if (id === meta.current) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "LOADED"; r.appendChild(t); }
+      r.addEventListener("click", () => { selShow = id; showNameInput.value = meta.names[id]; drawShowRows(); });
+      r.addEventListener("dblclick", () => { selShow = id; loadShow(id).then(closeShows); });
+      showRows.appendChild(r);
+    });
+    $("skLoad").classList.toggle("dim", selShow === meta.current);
+    $("skDelete").classList.toggle("dim", meta.order.length <= 1);
+  }
+  function openShows() {
+    if (!ready) return;
+    selShow = meta.current; showNameInput.value = meta.names[selShow]; showsMsg.textContent = "";
+    drawShowRows(); showsScrim.classList.add("open");
+  }
+  function closeShows() { showNameInput.blur(); showsScrim.classList.remove("open"); render(); }
+  async function loadShow(id) {
+    if (!meta.order.includes(id)) return;
+    await save();
+    meta.current = id;
+    const sh = await kvGet("show:" + id);
+    state.legends = normalizeLegends(sh && sh.legends);
+    await save();
+    render();
+  }
+  function uniqueName(base) {
+    const names = new Set(meta.order.map(id => meta.names[id]));
+    if (!names.has(base)) return base;
+    let n = 2; while (names.has(base + " " + n)) n++;
+    return base + " " + n;
+  }
+  async function addShow(name, legends) {
+    const id = newId();
+    meta.order.push(id);
+    meta.names[id] = uniqueName(name);
+    await kvSet("show:" + id, { legends: normalizeLegends(legends) });
+    await save();
+    selShow = id; showNameInput.value = meta.names[id];
+    drawShowRows();
+    return id;
+  }
+  $("showChip").addEventListener("click", openShows);
+  $("showsX").addEventListener("click", closeShows);
+  showNameInput.addEventListener("input", () => {
+    if (!selShow) return;
+    meta.names[selShow] = showNameInput.value.slice(0, 32) || "Untitled";
+    save(); drawShowRows(); render();
+  });
+  showNameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") showNameInput.blur(); });
+  $("skLoad").addEventListener("click", async () => {
+    if (!selShow || selShow === meta.current) return;
+    await loadShow(selShow); closeShows();
+  });
+  $("skNew").addEventListener("click", async () => {
+    await addShow("New Show", null);
+    showsMsg.textContent = "CREATED — press Load to use it";
+    showNameInput.focus(); showNameInput.select();
+  });
+  $("skCopy").addEventListener("click", async () => {
+    if (!selShow) return;
+    if (selShow === meta.current) await save();
+    const sh = selShow === meta.current ? { legends: state.legends } : await kvGet("show:" + selShow);
+    await addShow(meta.names[selShow] + " copy", sh && sh.legends);
+    showsMsg.textContent = "COPIED";
+  });
+  $("skExport").addEventListener("click", async () => {
+    if (!selShow) return;
+    if (selShow === meta.current) await save();
+    const sh = await kvGet("show:" + selShow);
+    const name = meta.names[selShow];
+    const blob = new Blob([showJSON(name, normalizeLegends(sh && sh.legends))], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name.replace(/[\\/:*?"<>|]+/g, "_") + "_1000tGoPage.json";
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    showsMsg.textContent = "EXPORTED " + a.download;
+  });
+  $("skImport").addEventListener("click", () => { $("importFile").value = ""; $("importFile").click(); });
+  $("importFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = async () => {
+      try {
+        const d = JSON.parse(rd.result);
+        if (!d || !Array.isArray(d.legends)) throw new Error("bad");
+        const name = (typeof d.name === "string" && d.name) || f.name.replace(/(_1000tGoPage)?\.json$/i, "");
+        await addShow(name, d.legends);
+        showsMsg.textContent = "IMPORTED — press Load to use it";
+      } catch (x) { showsMsg.textContent = "INVALID FILE"; }
+    };
+    rd.readAsText(f);
+  });
+  // hold to delete (no confirm dialogs)
+  (() => {
+    const btn = $("skDelete");
+    let timer = null;
+    const cancel = () => { clearTimeout(timer); timer = null; btn.classList.remove("holding"); };
+    btn.addEventListener("pointerdown", (e) => {
+      if (meta.order.length <= 1 || !selShow) return;
+      e.preventDefault();
+      btn.classList.add("holding");
+      timer = setTimeout(async () => {
+        cancel();
+        const id = selShow;
+        const wasCurrent = id === meta.current;
+        meta.order = meta.order.filter(x => x !== id);
+        delete meta.names[id];
+        await kvDel("show:" + id);
+        if (wasCurrent) {
+          meta.current = meta.order[0];
+          const sh = await kvGet("show:" + meta.current);
+          state.legends = normalizeLegends(sh && sh.legends);
+        }
+        await save();
+        selShow = meta.current; showNameInput.value = meta.names[selShow];
+        showsMsg.textContent = "DELETED";
+        drawShowRows(); render();
+      }, 800);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(t => btn.addEventListener(t, cancel));
+  })();
 
   // ---------- viewport ----------
   function fitHeight() {
@@ -712,6 +962,7 @@
 
   render();
   refreshMidiUI();
+  init();
 })();
 </script>
 </body>
