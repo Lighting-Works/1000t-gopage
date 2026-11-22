@@ -301,7 +301,7 @@
         <div style="display:flex;gap:8px;margin-top:8px"><button class="key" id="backupCopy">Copy</button><button class="key" id="backupLoad">Load</button></div>
         <div class="msg" id="backupMsg"></div>
       </div>
-      <div class="msg">V2.0</div>
+      <div class="msg">V2.1</div>
     </div>
   </div>
 </div>
@@ -519,7 +519,8 @@
     paintPreview();
     legendScrim.classList.add("open");
   }
-  function closeLegend() { legendText.blur(); legendScrim.classList.remove("open"); work = null; render(); }
+  // Set Legend is one-shot (as on Titan): finishing or cancelling one button leaves Set Legend mode
+  function closeLegend() { legendText.blur(); legendScrim.classList.remove("open"); work = null; legendMode = false; render(); }
   function commitLegend() { state.legends[editing - 1] = Object.assign({}, work); save(); closeLegend(); }
   legendText.addEventListener("input", () => { work.text = legendText.value.slice(0, 24); paintPreview(); });
   legendText.addEventListener("keydown", (e) => { if (e.key === "Enter") commitLegend(); });
