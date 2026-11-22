@@ -8,23 +8,24 @@
 <title>1000T GO PAGE</title>
 <style>
   :root {
-    --bg: #0e0e0f;
-    --panel: #1a1b1d;
-    --title: #26282b;
-    --btn: #2e3034;
-    --btn-hi: #3a3d42;
-    --border: #45484d;
-    --lcd: #101214;
-    --text: #e8e8e8;
-    --sub: #9a9da3;
+    --bg: #141414;
+    --win: #1e1f21;
+    --border: #3c3f44;
+    --text: #f2f2f2;
+    --sub: #a3a7ad;
     --accent: #ffb000;
     --ok: #3ddc84;
     --danger: #e5484d;
+    --btn-top: #2d3f5f;
+    --btn-bot: #1a2438;
+    --btn-border: #3d4c66;
+    --act-top: #5a7fb8;
+    --act-bot: #34507e;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; height: 100%; background: var(--bg); color: var(--text);
-    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     overflow: hidden; overscroll-behavior: none;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
     touch-action: manipulation;
@@ -35,10 +36,20 @@
   }
   body.legend-mode #app { box-shadow: inset 0 0 0 3px var(--accent); }
 
+  /* grey softkey-style buttons */
+  .key {
+    height: 44px; padding: 0 16px; font-size: 15px; font-weight: 600; color: #f0f0f0;
+    background: linear-gradient(#5b5e63, #3d4044); border: 1px solid #25272a; border-radius: 6px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .key:active { filter: brightness(1.25); }
+  .key.on { background: linear-gradient(#ffcc4d, #e09a00); color: #111; }
+  .key.dim { opacity: .45; }
+
   /* top bar */
   .bar {
-    display: flex; align-items: center; gap: 12px; height: 56px; flex: none;
-    padding: 0 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    display: flex; align-items: center; gap: 12px; height: 58px; flex: none;
+    padding: 0 10px; background: var(--win); border: 1px solid var(--border); border-radius: 6px;
   }
   .brand { font-weight: 900; font-size: 19px; letter-spacing: .5px; }
   .midi { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 600; color: var(--sub); min-width: 0; }
@@ -46,103 +57,123 @@
   .midi .dot.on { background: var(--ok); }
   .midi .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
   .spacer { flex: 1; }
-  .chip {
-    display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 14px;
-    background: var(--lcd); border-radius: 5px;
-  }
+  .chip { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; background: #0d0e10; border-radius: 6px; }
   .chip .k { font-size: 12px; font-weight: 700; color: var(--sub); }
   .chip .v { font: 900 24px ui-monospace, Menlo, monospace; color: var(--accent); min-width: 30px; text-align: center; }
   .chip .l { font-size: 16px; font-weight: 700; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chip img { height: 34px; width: 34px; object-fit: contain; display: none; }
-  .bbtn {
-    height: 40px; padding: 0 16px; font-size: 14px; font-weight: 800; letter-spacing: .3px;
-    color: var(--text); background: var(--btn); border: 1px solid var(--border); border-radius: 4px;
-  }
-  .bbtn.on { background: var(--accent); color: #000; border-color: var(--accent); }
-  .bbtn.warn { border-color: var(--danger); color: #ffb3b5; }
+  .chip img { height: 36px; width: 40px; object-fit: contain; display: none; }
 
-  /* window */
+  /* workspace window */
   .window {
     flex: 1; min-height: 0; display: flex; flex-direction: column;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    background: var(--win); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
   }
-  .window-title {
-    flex: none; height: 32px; display: flex; align-items: center; padding: 0 12px;
-    background: var(--title); font-size: 13px; font-weight: 800; color: var(--sub); letter-spacing: .5px;
+  .wtitle {
+    flex: none; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    background: linear-gradient(#4a4c50, #303235); border-bottom: 1px solid #1a1b1d;
+    font-size: 15px; font-weight: 700;
   }
+  .wtitle svg { width: 18px; height: 18px; }
   .grid {
     flex: 1 1 0; min-height: 0; height: 100%; padding: 8px; display: grid; gap: 7px;
     grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr));
   }
 
-  /* tile */
+  /* Titan-style touch button */
   .tile {
-    position: relative; border-radius: 6px; background: var(--btn); border: 1px solid var(--border);
-    overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 18px 6px 8px; min-height: 0;
+    position: relative; border-radius: 7px; overflow: hidden; min-height: 0;
+    background: linear-gradient(var(--btn-top), var(--btn-bot));
+    box-shadow: inset 0 0 0 1px var(--btn-border);
+    display: flex; align-items: center; justify-content: center; padding: 20px 6px 8px;
   }
-  .tile .strip { position: absolute; left: 0; right: 0; top: 0; height: 7px; }
-  .tile .num { position: absolute; left: 8px; top: 11px; font: 700 clamp(11px, 1.1vw, 15px) ui-monospace, Menlo, monospace; color: var(--sub); z-index: 2; }
+  .tile.halo { box-shadow: inset 0 0 0 3px var(--halo); }
+  .tile.active { background: linear-gradient(var(--act-top), var(--act-bot)); }
+  .tile.active::after {
+    content: ""; position: absolute; inset: 0; border-radius: 7px; pointer-events: none;
+    box-shadow: inset 0 0 0 3px #fff, inset 0 0 14px rgba(255,255,255,.35);
+  }
+  .tile.active.halo::after { box-shadow: inset 0 0 0 3px var(--halo), inset 0 0 0 5px #fff; }
+  .tile .num { position: absolute; left: 8px; top: 6px; font-weight: 800; font-size: clamp(12px, 1.15vw, 16px); z-index: 2; }
   .tile .leg {
     font-size: clamp(16px, 2vw, 28px); font-weight: 800; text-align: center; line-height: 1.15;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;
   }
-  .tile .pic { position: absolute; inset: 7px 0 0 0; width: 100%; height: calc(100% - 7px); object-fit: contain; display: none; pointer-events: none; }
+  .tile.empty .leg { color: rgba(255,255,255,.25); font-weight: 600; }
+  .tile .pic { position: absolute; left: 6px; right: 6px; top: 6px; bottom: 6px; width: calc(100% - 12px); height: calc(100% - 12px);
+               object-fit: contain; display: none; pointer-events: none; }
   .tile.has-pic .pic { display: block; }
   .tile.has-pic .leg { display: none; }
-  .tile.empty .leg { color: rgba(154,157,163,.5); font-weight: 600; }
-  .tile.active { border: 3px solid var(--accent); }
-  .tile.pressed { filter: brightness(1.35); }
+  .tile.pressed { filter: brightness(1.3); }
 
-  /* modal */
-  .scrim {
-    position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
-    align-items: center; justify-content: center; z-index: 10;
+  /* windows (modal) */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; z-index: 10; }
+  .scrim.open { display: flex; align-items: center; justify-content: center; }
+  .dwin {
+    background: var(--win); border: 1px solid #55585e; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 12px 50px rgba(0,0,0,.7); display: flex; flex-direction: column; max-height: calc(var(--app-h, 100vh) - 16px);
   }
-  .scrim.open { display: flex; }
-  .dialog {
-    width: min(520px, 92vw); max-height: 96dvh; background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-    overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.6); display: flex; flex-direction: column;
-  }
-  .dialog.wide { width: min(960px, 97vw); }
-  .dialog header {
-    flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
-    background: var(--title); font-weight: 800; font-size: 14px;
-  }
-  .dialog .body { padding: 14px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
-  .lbl { font-size: 11px; font-weight: 800; color: var(--sub); letter-spacing: .5px; margin-bottom: 6px; }
+  .dwin .wtitle { height: 44px; }
+  .xbtn { margin-left: auto; width: 44px; height: 34px; padding: 0; font-size: 20px; }
+  .dbody { padding: 14px; display: flex; gap: 14px; min-height: 0; }
+  .softkeys { display: flex; flex-direction: column; gap: 8px; width: 170px; flex: none; }
+  .softkeys .key { height: 54px; text-align: left; display: flex; align-items: center; gap: 10px; }
+  .softkeys .key b { font-size: 12px; color: #c9cdd3; width: 14px; }
+  .lbl { font-size: 12px; font-weight: 800; color: var(--sub); letter-spacing: .5px; margin-bottom: 6px; }
   input[type=text], select, textarea {
-    width: 100%; font-size: 17px; padding: 10px; color: var(--text); background: var(--lcd);
-    border: 1px solid var(--border); border-radius: 5px; outline: none; -webkit-user-select: text; user-select: text;
+    width: 100%; font-size: 18px; padding: 12px; color: var(--text); background: #0d0e10;
+    border: 1px solid var(--border); border-radius: 6px; outline: none; -webkit-user-select: text; user-select: text;
   }
   textarea { font: 12px ui-monospace, Menlo, monospace; height: 90px; resize: none; }
-  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-  .sw { height: 34px; border-radius: 5px; border: 3px solid transparent; font-size: 10px; font-weight: 800; color: #fff;
-        display: flex; align-items: center; justify-content: center; }
-  .sw.sel { border-color: #fff; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .row .bbtn { height: 40px; font-size: 13px; flex: 1; }
-  .stepper { display: flex; align-items: center; gap: 8px; }
-  .stepper .v { font: 900 20px ui-monospace, Menlo, monospace; color: var(--accent); min-width: 34px; text-align: center; }
-  .msg { font-size: 11px; color: var(--sub); min-height: 14px; }
+  .msg { font-size: 12px; color: var(--sub); min-height: 14px; }
 
-  /* legend editor */
-  .editor { display: flex; gap: 14px; align-items: flex-start; }
-  .canvas-wrap {
-    flex: none; width: min(420px, 46vw); aspect-ratio: 1 / 1; position: relative;
-    border-radius: 6px; border: 2px solid var(--border); overflow: hidden; background: var(--btn);
+  /* Set Legend window */
+  #legendWin { width: min(720px, 94vw); }
+  .preview-tile { width: 220px; height: 200px; flex: none; }
+
+  /* Picture editor (fills the screen like Titan) */
+  #picWin { width: calc(100vw - 16px); height: calc(var(--app-h, 100vh) - 16px); }
+  .ptop {
+    flex: none; height: 64px; display: flex; align-items: center; gap: 6px; padding: 0 8px;
+    background: linear-gradient(#4a4c50, #303235); border-bottom: 1px solid #1a1b1d;
   }
-  .canvas-wrap .strip { position: absolute; left: 0; right: 0; top: 0; height: 6px; z-index: 1; pointer-events: none; }
-  .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
-  .tools { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-  .pens { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .pen { height: 34px; border-radius: 5px; border: 3px solid transparent; }
-  .pen.sel { border-color: #fff; }
-  .slider-row { display: flex; align-items: center; gap: 10px; }
-  .slider-row .val { font: 800 13px ui-monospace, Menlo, monospace; color: var(--accent); width: 42px; text-align: right; }
-  input[type=range] { flex: 1; height: 34px; accent-color: var(--accent); }
-  .preview { width: 44px; height: 44px; flex: none; border-radius: 5px; background: var(--lcd);
-             display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
-  .preview i { display: block; border-radius: 50%; }
+  .tab { width: 64px; height: 50px; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .tab svg { width: 30px; height: 30px; }
+  .ptitle { margin-left: 12px; font-size: 16px; font-weight: 700; color: #ddd; }
+  .pbody { flex: 1; min-height: 0; display: flex; }
+  .pcanvas-area { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 14px; background: #101113; }
+  .pcanvas-wrap { position: relative; border-radius: 8px; overflow: hidden;
+                  background: linear-gradient(var(--btn-top), var(--btn-bot)); box-shadow: 0 0 0 1px #000; }
+  .pcanvas-wrap.halo { box-shadow: inset 0 0 0 4px var(--halo), 0 0 0 1px #000; }
+  .pcanvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  .pside { width: 112px; flex: none; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: #2a2c2f; border-left: 1px solid #1a1b1d; }
+  .pside .key { height: 66px; padding: 0; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+  .pside .key.sel { background: linear-gradient(#2c2e31, #4a4d52); box-shadow: inset 0 2px 6px rgba(0,0,0,.6); color: #fff; }
+  .pside .grow { flex: 1; }
+  .sizedot { border-radius: 50%; background: #e9e9e9; }
+
+  /* popovers */
+  .pop {
+    position: fixed; z-index: 30; display: none; background: var(--win); border: 1px solid #5d6066; border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.7); padding: 12px;
+  }
+  .pop.open { display: block; }
+  .size-row { display: flex; align-items: center; gap: 14px; width: 360px; }
+  .size-row input[type=range] { flex: 1; height: 40px; accent-color: var(--accent); }
+  .size-prev { width: 84px; height: 84px; flex: none; display: flex; align-items: center; justify-content: center; background: #0d0e10; border-radius: 6px; }
+
+  /* Titan classic picker: hue/saturation field + intensity slider */
+  .picker { display: flex; gap: 12px; }
+  .pfield { position: relative; width: 460px; height: 300px; border-radius: 3px; overflow: hidden; touch-action: none; }
+  .pfield canvas { width: 100%; height: 100%; display: block; }
+  .pcross { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+            border: 2px solid #fff; box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #000; pointer-events: none; }
+  .pslider { position: relative; width: 44px; height: 300px; border-radius: 4px; background: #111; padding: 4px; touch-action: none; }
+  .pslider .track { position: absolute; left: 8px; right: 8px; top: 8px; bottom: 8px; border-radius: 3px; }
+  .pslider .knob { position: absolute; left: 3px; right: 3px; height: 22px; margin-top: -11px; border-radius: 5px;
+                   background: linear-gradient(#f4f4f4, #b9bcc0); box-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+  .pfoot { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .swatch { width: 64px; height: 40px; border-radius: 6px; border: 1px solid #000; }
+  .pval { font: 700 13px ui-monospace, Menlo, monospace; color: var(--sub); }
 </style>
 </head>
 <body>
@@ -153,513 +184,528 @@
     <div class="spacer"></div>
     <div class="chip"><span class="k">PB PAGE</span><span class="v" id="curNum">--</span><img id="curPic" alt=""><span class="l" id="curLeg"></span></div>
     <div class="spacer"></div>
-    <button class="bbtn" id="btnLegend">SET LEGEND</button>
-    <button class="bbtn" id="btnSetup">SETUP</button>
+    <button class="key" id="btnLegend">Set Legend</button>
+    <button class="key" id="btnSetup">Setup</button>
   </div>
 
   <div class="window">
-    <div class="window-title">GO PAGE</div>
+    <div class="wtitle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Go Page
+    </div>
     <div class="grid" id="grid"></div>
   </div>
 </div>
 
-  <!-- Set Legend -->
-  <div class="scrim" id="legendScrim">
-    <div class="dialog wide">
-      <header><span id="legendTitle">Page 1</span><button class="bbtn on" id="legendDone">DONE</button></header>
-      <div class="body">
-        <div class="editor">
-          <div class="canvas-wrap" id="canvasWrap">
-            <canvas id="pad" width="400" height="400"></canvas>
-            <div class="strip" id="padStrip"></div>
-          </div>
-          <div class="tools">
-            <div>
-              <div class="lbl">PEN COLOUR</div>
-              <div class="pens" id="pens"></div>
-            </div>
-            <div>
-              <div class="lbl">BRIGHTNESS</div>
-              <div class="slider-row"><input type="range" id="bright" min="10" max="100" step="1"><span class="val" id="brightVal">100%</span></div>
-            </div>
-            <div>
-              <div class="lbl">LINE WIDTH</div>
-              <div class="slider-row">
-                <input type="range" id="width" min="2" max="40" step="1">
-                <span class="val" id="widthVal">8</span>
-                <div class="preview"><i id="widthDot"></i></div>
-              </div>
-            </div>
-            <div class="row">
-              <button class="bbtn on" id="toolPen">PEN</button>
-              <button class="bbtn" id="toolEraser">ERASER</button>
-              <button class="bbtn" id="padUndo">UNDO</button>
-              <button class="bbtn warn" id="padClear">ALL CLEAR</button>
-            </div>
-          </div>
+<!-- Set Legend (keyboard entry + softkeys) -->
+<div class="scrim" id="legendScrim">
+  <div class="dwin" id="legendWin">
+    <div class="wtitle"><span id="legendTitle">Set Legend</span><button class="key xbtn" id="legendX">✕</button></div>
+    <div class="dbody">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+        <div class="tile preview-tile" id="legendPreview"><img class="pic" alt=""><div class="num"></div><div class="leg"></div></div>
+        <div>
+          <div class="lbl">LEGEND</div>
+          <input type="text" id="legendText" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
-        <div class="editor">
-          <div style="flex:1;min-width:0">
-            <div class="lbl">TEXT (shown when no drawing)</div>
-            <input type="text" id="legendText" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false">
-          </div>
-          <div style="flex:1;min-width:0">
-            <div class="lbl">BUTTON COLOUR</div>
-            <div class="swatches" id="swatches"></div>
-          </div>
-        </div>
+      </div>
+      <div class="softkeys">
+        <button class="key" id="skPicture"><b>A</b>Picture</button>
+        <button class="key" id="skHalo"><b>B</b>Halo</button>
+        <button class="key" id="skRemoveHalo"><b>C</b>Remove Halo</button>
+        <button class="key" id="skClear"><b>D</b>Clear Legend</button>
+        <div style="flex:1"></div>
+        <button class="key" id="legendEnter">Enter</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Setup -->
-  <div class="scrim" id="setupScrim">
-    <div class="dialog">
-      <header><span>SETUP</span><button class="bbtn on" id="setupDone">DONE</button></header>
-      <div class="body">
-        <div><div class="lbl">MIDI OUTPUT</div><select id="outSel"></select></div>
-        <div>
-          <div class="lbl">MIDI CHANNEL</div>
-          <div class="stepper"><button class="bbtn" id="chDown">−</button><span class="v" id="chVal">1</span><button class="bbtn" id="chUp">+</button></div>
-        </div>
-        <div>
-          <div class="lbl">BACKUP</div>
-          <textarea id="backupText" spellcheck="false"></textarea>
-          <div class="row" style="margin-top:8px">
-            <button class="bbtn" id="backupCopy">COPY</button>
-            <button class="bbtn" id="backupLoad">LOAD</button>
-          </div>
-          <div class="msg" id="backupMsg"></div>
-        </div>
-        <div class="msg">V1.1</div>
+<!-- Halo colour picker -->
+<div class="scrim" id="haloScrim">
+  <div class="dwin">
+    <div class="wtitle"><span>Halo</span><button class="key xbtn" id="haloX">✕</button></div>
+    <div class="dbody" style="flex-direction:column">
+      <div id="haloPicker"></div>
+      <div class="pfoot">
+        <div class="swatch" id="haloSwatch"></div><span class="pval" id="haloVal"></span>
+        <div style="flex:1"></div>
+        <button class="key" id="haloRemove">Remove Halo</button>
+        <button class="key" id="haloEnter">Enter</button>
       </div>
     </div>
   </div>
+</div>
+
+<!-- Picture editor -->
+<div class="scrim" id="picScrim">
+  <div class="dwin" id="picWin">
+    <div class="ptop">
+      <button class="key tab" id="tabKeyboard" title="Keyboard">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#eee" stroke-width="2"><rect x="3" y="8" width="26" height="16" rx="2"/><path d="M7 13h2M11 13h2M15 13h2M19 13h2M23 13h2M7 17h2M11 17h2M15 17h2M19 17h2M23 17h2M10 21h12"/></svg>
+      </button>
+      <button class="key tab on" id="tabDraw" title="Draw">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#222" stroke-width="2.2"><path d="M6 26l2-7L21 6l5 5L13 24z"/><path d="M18 9l5 5"/><path d="M6 26l6-2"/></svg>
+      </button>
+      <span class="ptitle" id="picTitle">Page 1</span>
+      <button class="key xbtn" id="picX" style="width:64px;height:50px">✕</button>
+    </div>
+    <div class="pbody">
+      <div class="pcanvas-area" id="padArea">
+        <div class="pcanvas-wrap" id="padWrap"><canvas id="pad"></canvas></div>
+      </div>
+      <div class="pside">
+        <button class="key sel" id="toolPen">Pen</button>
+        <button class="key" id="toolEraser">Eraser</button>
+        <button class="key" id="toolSize"><span class="sizedot" id="sizeDot"></span></button>
+        <button class="key" id="toolColour">
+          <svg viewBox="0 0 64 40" width="64" height="40"><path id="colourScribble" d="M8 30 L22 12 L18 30 L34 12 L30 30 L46 12 L42 30 L56 14" fill="none" stroke="#f22" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="key" id="toolClear">Clear</button>
+        <div class="grow"></div>
+        <button class="key" id="picEnter">Enter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- popovers for the picture editor -->
+<div class="pop" id="sizePop">
+  <div class="size-row">
+    <input type="range" id="sizeRange" min="1" max="40" step="1">
+    <div class="size-prev"><span class="sizedot" id="sizePrev"></span></div>
+  </div>
+</div>
+<div class="pop" id="colourPop">
+  <div id="penPicker"></div>
+  <div class="pfoot"><div class="swatch" id="penSwatch"></div><span class="pval" id="penVal"></span></div>
+</div>
+
+<!-- Setup -->
+<div class="scrim" id="setupScrim">
+  <div class="dwin" style="width:min(560px,94vw)">
+    <div class="wtitle"><span>Setup</span><button class="key xbtn" id="setupX">✕</button></div>
+    <div class="dbody" style="flex-direction:column;overflow:auto">
+      <div><div class="lbl">MIDI OUTPUT</div><select id="outSel"></select></div>
+      <div>
+        <div class="lbl">MIDI CHANNEL</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="key" id="chDown">−</button>
+          <span id="chVal" style="font:900 22px ui-monospace,Menlo,monospace;color:var(--accent);min-width:36px;text-align:center">1</span>
+          <button class="key" id="chUp">+</button>
+        </div>
+      </div>
+      <div>
+        <div class="lbl">BACKUP</div>
+        <textarea id="backupText" spellcheck="false"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="key" id="backupCopy">Copy</button><button class="key" id="backupLoad">Load</button></div>
+        <div class="msg" id="backupMsg"></div>
+      </div>
+      <div class="msg">V2.0</div>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
   "use strict";
   const PAGES = 40;
   const KEY = "1000t-gopage-v1";
-  const PAD = 400;               // drawing resolution (px)
-  const COLORS = [               // button colours
-    ["none", "#5a5d63"], ["red", "#e53935"], ["orange", "#fb8c00"], ["yellow", "#fdd835"],
-    ["lime", "#9ccc65"], ["green", "#43a047"], ["cyan", "#26c6da"], ["blue", "#1e88e5"],
-    ["purple", "#8e24aa"], ["magenta", "#d81b60"], ["pink", "#f48fb1"], ["white", "#eceff1"]
-  ];
-  const PENS = [                 // pen base colours (full brightness)
-    [255,255,255], [255,40,40], [255,140,0], [255,230,0], [120,255,60],
-    [0,230,120], [0,220,255], [40,110,255], [170,60,255], [255,40,170]
-  ];
-  const colorHex = (name) => (COLORS.find(c => c[0] === name) || COLORS[0])[1];
+  const OLD_COLORS = { red:"#e53935", orange:"#fb8c00", yellow:"#fdd835", lime:"#9ccc65", green:"#43a047", cyan:"#26c6da",
+                       blue:"#1e88e5", purple:"#8e24aa", magenta:"#d81b60", pink:"#f48fb1", white:"#eceff1" };
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- colour helpers ----------
+  function hsvToRgb(h, s, v) {
+    h = ((h % 360) + 360) % 360;
+    const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) [r, g, b] = [c, x, 0]; else if (h < 120) [r, g, b] = [x, c, 0];
+    else if (h < 180) [r, g, b] = [0, c, x]; else if (h < 240) [r, g, b] = [0, x, c];
+    else if (h < 300) [r, g, b] = [x, 0, c]; else [r, g, b] = [c, 0, x];
+    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+  }
+  function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let h = 0;
+    if (d) {
+      if (mx === r) h = 60 * (((g - b) / d) % 6); else if (mx === g) h = 60 * ((b - r) / d + 2); else h = 60 * ((r - g) / d + 4);
+    }
+    return { h: (h + 360) % 360, s: mx ? d / mx : 0, v: mx };
+  }
+  const hex = (rgb) => "#" + rgb.map(n => n.toString(16).padStart(2, "0")).join("");
+  const hsvHex = (c) => hex(hsvToRgb(c.h, c.s, c.v));
+  function hexToHsv(h) {
+    const m = /^#([0-9a-f]{6})$/i.exec(h || "");
+    if (!m) return { h: 0, s: 1, v: 1 };
+    const n = parseInt(m[1], 16);
+    return rgbToHsv((n >> 16) & 255, (n >> 8) & 255, n & 255);
+  }
 
   // ---------- state ----------
-  const blankLegend = () => ({ text: "", color: "none", img: "" });
+  const blankLegend = () => ({ text: "", halo: "", img: "" });
   const blank = () => ({
     legends: Array.from({ length: PAGES }, blankLegend),
     channel: 1,
     outputId: "all",
-    pen: { color: 0, bright: 100, width: 8 }
+    pen: { h: 0, s: 1, v: 1, size: 8 }
   });
+  const isHex = (h) => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h);
   function normalize(s) {
     const b = blank();
     if (!s || typeof s !== "object") return b;
     if (Array.isArray(s.legends)) {
       for (let i = 0; i < PAGES; i++) {
         const l = s.legends[i];
-        if (l && typeof l === "object") {
-          b.legends[i] = {
-            text: typeof l.text === "string" ? l.text.slice(0, 24) : "",
-            color: COLORS.some(c => c[0] === l.color) ? l.color : "none",
-            img: typeof l.img === "string" && l.img.startsWith("data:image/png") ? l.img : ""
-          };
-        }
+        if (!l || typeof l !== "object") continue;
+        let halo = isHex(l.halo) ? l.halo : "";
+        if (!halo && typeof l.color === "string" && OLD_COLORS[l.color]) halo = OLD_COLORS[l.color]; // V1.x button colour -> halo
+        b.legends[i] = {
+          text: typeof l.text === "string" ? l.text.slice(0, 24) : "",
+          halo,
+          img: typeof l.img === "string" && l.img.startsWith("data:image/png") ? l.img : ""
+        };
       }
     }
     const ch = parseInt(s.channel, 10);
     if (ch >= 1 && ch <= 16) b.channel = ch;
     if (typeof s.outputId === "string") b.outputId = s.outputId;
-    if (s.pen && typeof s.pen === "object") {
-      const c = parseInt(s.pen.color, 10), br = parseInt(s.pen.bright, 10), w = parseInt(s.pen.width, 10);
-      if (c >= 0 && c < PENS.length) b.pen.color = c;
-      if (br >= 10 && br <= 100) b.pen.bright = br;
-      if (w >= 2 && w <= 40) b.pen.width = w;
+    const p = s.pen;
+    if (p && typeof p === "object") {
+      if (typeof p.h === "number" && typeof p.s === "number" && typeof p.v === "number") {
+        b.pen.h = Math.min(360, Math.max(0, p.h)); b.pen.s = Math.min(1, Math.max(0, p.s)); b.pen.v = Math.min(1, Math.max(0, p.v));
+      }
+      const sz = parseInt(p.size != null ? p.size : p.width, 10);
+      if (sz >= 1 && sz <= 40) b.pen.size = sz;
     }
     return b;
   }
   let state = blank();
   try { state = normalize(JSON.parse(localStorage.getItem(KEY) || "null")); } catch (e) { state = blank(); }
-  let saveMsgShown = false;
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) {
-      if (!saveMsgShown) { saveMsgShown = true; document.getElementById("midiName").textContent = "STORAGE FULL"; }
-    }
+    catch (e) { $("midiName").textContent = "STORAGE FULL"; }
   }
 
-  let current = 0;          // 0 = unknown
+  let current = 0;
   let legendMode = false;
-  let editing = 0;          // page being edited
+  let editing = 0;
+  let work = null;      // working copy of the legend being edited
 
   // ---------- MIDI ----------
   let midi = null;
-  function outputs() {
-    if (!midi) return [];
-    const list = [];
-    midi.outputs.forEach(o => list.push(o));
-    return list;
-  }
-  function targets() {
-    const outs = outputs();
-    if (state.outputId === "all") return outs;
-    return outs.filter(o => o.id === state.outputId);
-  }
-  function send(bytes) {
-    const t = targets();
-    t.forEach(o => { try { o.send(bytes); } catch (e) {} });
-    return t.length > 0;
-  }
+  function outputs() { const l = []; if (midi) midi.outputs.forEach(o => l.push(o)); return l; }
+  function targets() { const o = outputs(); return state.outputId === "all" ? o : o.filter(x => x.id === state.outputId); }
+  function send(bytes) { targets().forEach(o => { try { o.send(bytes); } catch (e) {} }); }
   function refreshMidiUI() {
-    const dot = document.getElementById("midiDot");
-    const name = document.getElementById("midiName");
-    document.getElementById("midiCh").textContent = "CH " + state.channel;
+    const dot = $("midiDot"), name = $("midiName");
+    $("midiCh").textContent = "CH " + state.channel;
     if (!midi) { dot.classList.remove("on"); name.textContent = "WEB MIDI NOT AVAILABLE"; return; }
     const t = targets();
     dot.classList.toggle("on", t.length > 0);
-    if (state.outputId === "all") {
-      name.textContent = t.length === 0 ? "NO MIDI DEVICE" : (t.length === 1 ? t[0].name : "ALL (" + t.length + ")");
-    } else {
-      name.textContent = t.length ? t[0].name : "NOT CONNECTED";
-    }
-    const sel = document.getElementById("outSel");
+    if (state.outputId === "all") name.textContent = t.length === 0 ? "NO MIDI DEVICE" : (t.length === 1 ? t[0].name : "ALL (" + t.length + ")");
+    else name.textContent = t.length ? t[0].name : "NOT CONNECTED";
+    const sel = $("outSel");
     sel.innerHTML = "";
-    const all = document.createElement("option");
-    all.value = "all"; all.textContent = "All Outputs";
-    sel.appendChild(all);
+    const all = document.createElement("option"); all.value = "all"; all.textContent = "All Outputs"; sel.appendChild(all);
     let found = state.outputId === "all";
     outputs().forEach(o => {
-      const op = document.createElement("option");
-      op.value = o.id; op.textContent = o.name || o.id;
-      sel.appendChild(op);
+      const op = document.createElement("option"); op.value = o.id; op.textContent = o.name || o.id; sel.appendChild(op);
       if (o.id === state.outputId) found = true;
     });
-    if (!found) {
-      const op = document.createElement("option");
-      op.value = state.outputId; op.textContent = "(Not connected)";
-      sel.appendChild(op);
-    }
+    if (!found) { const op = document.createElement("option"); op.value = state.outputId; op.textContent = "(Not connected)"; sel.appendChild(op); }
     sel.value = state.outputId;
   }
   if (navigator.requestMIDIAccess) {
-    navigator.requestMIDIAccess({ sysex: false }).then(access => {
-      midi = access;
-      midi.onstatechange = refreshMidiUI;
-      refreshMidiUI();
-    }, () => { midi = null; refreshMidiUI(); });
+    navigator.requestMIDIAccess({ sysex: false }).then(a => { midi = a; midi.onstatechange = refreshMidiUI; refreshMidiUI(); },
+                                                      () => { midi = null; refreshMidiUI(); });
   }
-
   // MINI 1000T: switch PB page = $Bn + (page-1) + 00
-  function goPage(p) {
-    current = p;
-    send([0xB0 | (state.channel - 1), p - 1, 0x00]);
-    render();
-  }
+  function goPage(p) { current = p; send([0xB0 | (state.channel - 1), p - 1, 0x00]); render(); }
 
-  // ---------- render ----------
-  const grid = document.getElementById("grid");
+  // ---------- tiles ----------
+  function paintTile(el, l, p, active) {
+    el.querySelector(".num").textContent = p;
+    el.querySelector(".leg").textContent = l.text || ("Page " + p);
+    const pic = el.querySelector(".pic");
+    if (l.img) { if (pic.getAttribute("src") !== l.img) pic.src = l.img; } else pic.removeAttribute("src");
+    el.classList.toggle("has-pic", !!l.img);
+    el.classList.toggle("empty", !l.text && !l.img);
+    el.classList.toggle("active", !!active);
+    el.classList.toggle("halo", !!l.halo);
+    if (l.halo) el.style.setProperty("--halo", l.halo); else el.style.removeProperty("--halo");
+  }
+  const grid = $("grid");
   const tiles = [];
   for (let i = 1; i <= PAGES; i++) {
     const el = document.createElement("div");
     el.className = "tile";
-    el.innerHTML = '<div class="strip"></div><img class="pic" alt=""><div class="num">' + i + '</div><div class="leg"></div>';
-    el.addEventListener("pointerdown", (ev) => {
-      ev.preventDefault();
-      el.classList.add("pressed");
-      if (!legendMode) goPage(i);
-    });
+    el.innerHTML = '<img class="pic" alt=""><div class="num"></div><div class="leg"></div>';
+    el.addEventListener("pointerdown", (ev) => { ev.preventDefault(); el.classList.add("pressed"); if (!legendMode) goPage(i); });
     el.addEventListener("click", () => { if (legendMode) openLegend(i); });
     const up = () => el.classList.remove("pressed");
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", up);
-    el.addEventListener("pointerleave", up);
-    grid.appendChild(el);
-    tiles.push(el);
-  }
-  function tileBackground(color, active) {
-    const tint = active ? 40 : (color === "none" ? 0 : 16);
-    return tint ? "color-mix(in srgb, " + colorHex(color) + " " + tint + "%, #2e3034)" : "";
-  }
-  function renderTile(idx) {
-    const el = tiles[idx];
-    const p = idx + 1;
-    const l = state.legends[idx];
-    el.querySelector(".strip").style.background = colorHex(l.color);
-    el.querySelector(".leg").textContent = l.text || ("Page " + p);
-    const pic = el.querySelector(".pic");
-    if (l.img) { if (pic.getAttribute("src") !== l.img) pic.src = l.img; } else { pic.removeAttribute("src"); }
-    el.classList.toggle("has-pic", !!l.img);
-    el.classList.toggle("empty", !l.text && !l.img);
-    el.classList.toggle("active", p === current);
-    el.style.background = tileBackground(l.color, p === current);
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
+    grid.appendChild(el); tiles.push(el);
   }
   function render() {
-    for (let i = 0; i < PAGES; i++) renderTile(i);
-    document.getElementById("curNum").textContent = current ? String(current) : "--";
+    tiles.forEach((el, i) => paintTile(el, state.legends[i], i + 1, i + 1 === current));
+    $("curNum").textContent = current ? String(current) : "--";
     const cl = current ? state.legends[current - 1] : null;
-    document.getElementById("curLeg").textContent = cl ? cl.text : "";
-    const cp = document.getElementById("curPic");
-    if (cl && cl.img) { cp.src = cl.img; cp.style.display = "block"; } else { cp.style.display = "none"; }
+    $("curLeg").textContent = cl ? cl.text : "";
+    const cp = $("curPic");
+    if (cl && cl.img) { cp.src = cl.img; cp.style.display = "block"; } else cp.style.display = "none";
     document.body.classList.toggle("legend-mode", legendMode);
-    document.getElementById("btnLegend").classList.toggle("on", legendMode);
+    $("btnLegend").classList.toggle("on", legendMode);
   }
 
-  // ---------- drawing pad ----------
-  const pad = document.getElementById("pad");
-  const ctx = pad.getContext("2d");
-  const canvasWrap = document.getElementById("canvasWrap");
-  let tool = "pen";
-  let undoStack = [];
-  let drawing = null;   // { id, last, mid }
+  // ---------- Titan classic colour picker (hue x saturation field + intensity slider) ----------
+  function makePicker(host, getColour, setColour) {
+    host.innerHTML =
+      '<div class="picker"><div class="pfield"><canvas width="460" height="300"></canvas><div class="pcross"></div></div>' +
+      '<div class="pslider"><div class="track"></div><div class="knob"></div></div></div>';
+    const field = host.querySelector(".pfield"), cv = field.querySelector("canvas"), cross = field.querySelector(".pcross");
+    const slider = host.querySelector(".pslider"), track = slider.querySelector(".track"), knob = slider.querySelector(".knob");
+    const g = cv.getContext("2d");
+    const hue = g.createLinearGradient(0, 0, cv.width, 0);
+    for (let k = 0; k <= 6; k++) hue.addColorStop(k / 6, hex(hsvToRgb(k * 60, 1, 1)));
+    g.fillStyle = hue; g.fillRect(0, 0, cv.width, cv.height);
+    const white = g.createLinearGradient(0, 0, 0, cv.height);
+    white.addColorStop(0, "rgba(255,255,255,0)"); white.addColorStop(1, "rgba(255,255,255,1)");
+    g.fillStyle = white; g.fillRect(0, 0, cv.width, cv.height);
 
-  function penColor() {
-    const [r, g, b] = PENS[state.pen.color];
-    const k = state.pen.bright / 100;
-    return "rgb(" + Math.round(r * k) + "," + Math.round(g * k) + "," + Math.round(b * k) + ")";
-  }
-  function padPoint(ev) {
-    const r = pad.getBoundingClientRect();
-    return { x: (ev.clientX - r.left) * PAD / r.width, y: (ev.clientY - r.top) * PAD / r.height };
-  }
-  function scaledWidth() {
-    // width slider is in tile pixels; the pad is drawn at 400px for a ~140px tile
-    return state.pen.width * PAD / 140;
-  }
-  function setupStroke() {
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = scaledWidth();
-    ctx.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
-    ctx.strokeStyle = penColor();
-    ctx.fillStyle = penColor();
-  }
-  function pushUndo() {
-    try {
-      undoStack.push(ctx.getImageData(0, 0, PAD, PAD));
-      if (undoStack.length > 30) undoStack.shift();
-    } catch (e) {}
-  }
-  pad.addEventListener("pointerdown", (ev) => {
-    if (drawing) return;               // one finger at a time (palm / second touch ignored)
-    ev.preventDefault();
-    try { pad.setPointerCapture(ev.pointerId); } catch (e) {}
-    pushUndo();
-    setupStroke();
-    const p = padPoint(ev);
-    drawing = { id: ev.pointerId, last: p, mid: p };
-    // dot for a single tap
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2);
-    if (tool === "eraser") { ctx.fillStyle = "#000"; }
-    ctx.fill();
-  });
-  pad.addEventListener("pointermove", (ev) => {
-    if (!drawing || ev.pointerId !== drawing.id) return;
-    ev.preventDefault();
-    const events = ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev];
-    for (const e of (events.length ? events : [ev])) {
-      const p = padPoint(e);
-      const mid = { x: (drawing.last.x + p.x) / 2, y: (drawing.last.y + p.y) / 2 };
-      ctx.beginPath();
-      ctx.moveTo(drawing.mid.x, drawing.mid.y);
-      ctx.quadraticCurveTo(drawing.last.x, drawing.last.y, mid.x, mid.y);
-      ctx.stroke();
-      drawing.last = p;
-      drawing.mid = mid;
+    function sync() {
+      const c = getColour();
+      cross.style.left = (c.h / 360 * 100) + "%";
+      cross.style.top = ((1 - c.s) * 100) + "%";
+      track.style.background = "linear-gradient(" + hex(hsvToRgb(c.h, c.s, 1)) + ", #000)";
+      const r = slider.getBoundingClientRect();
+      const inner = Math.max(1, r.height - 16);
+      knob.style.top = (8 + (1 - c.v) * inner) + "px";
     }
-  });
-  function endStroke(ev) {
-    if (!drawing || ev.pointerId !== drawing.id) return;
-    ctx.beginPath();
-    ctx.moveTo(drawing.mid.x, drawing.mid.y);
-    ctx.lineTo(drawing.last.x, drawing.last.y);
-    ctx.stroke();
-    drawing = null;
-    ctx.globalCompositeOperation = "source-over";
-    commitPad();
-  }
-  pad.addEventListener("pointerup", endStroke);
-  pad.addEventListener("pointercancel", endStroke);
-
-  function padIsEmpty() {
-    try {
-      const d = ctx.getImageData(0, 0, PAD, PAD).data;
-      for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) return false;
-      return true;
-    } catch (e) { return false; }
-  }
-  function commitPad() {
-    const l = state.legends[editing - 1];
-    l.img = padIsEmpty() ? "" : pad.toDataURL("image/png");
-    save();
-    renderTile(editing - 1);
-  }
-  function loadPad(src) {
-    ctx.globalCompositeOperation = "source-over";
-    ctx.clearRect(0, 0, PAD, PAD);
-    if (!src) return;
-    const im = new Image();
-    im.onload = () => { ctx.drawImage(im, 0, 0, PAD, PAD); };
-    im.src = src;
-  }
-
-  // tools UI
-  const pens = document.getElementById("pens");
-  PENS.forEach((rgb, i) => {
-    const d = document.createElement("div");
-    d.className = "pen";
-    d.style.background = "rgb(" + rgb.join(",") + ")";
-    d.addEventListener("click", () => {
-      state.pen.color = i; save();
-      setTool("pen");
-      syncTools();
+    function drag(el, fn) {
+      let id = null;
+      el.addEventListener("pointerdown", (e) => { id = e.pointerId; try { el.setPointerCapture(id); } catch (x) {} fn(e); e.preventDefault(); });
+      el.addEventListener("pointermove", (e) => { if (e.pointerId === id) { fn(e); e.preventDefault(); } });
+      const end = (e) => { if (e.pointerId === id) id = null; };
+      el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+    }
+    drag(field, (e) => {
+      const r = field.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+      const c = getColour();
+      setColour({ h: x * 360, s: 1 - y, v: c.v === 0 ? 1 : c.v });
+      sync();
     });
-    pens.appendChild(d);
-  });
-  const bright = document.getElementById("bright");
-  const width = document.getElementById("width");
-  bright.addEventListener("input", () => { state.pen.bright = parseInt(bright.value, 10); save(); syncTools(); });
-  width.addEventListener("input", () => { state.pen.width = parseInt(width.value, 10); save(); syncTools(); });
-  function setTool(t) {
-    tool = t;
-    document.getElementById("toolPen").classList.toggle("on", t === "pen");
-    document.getElementById("toolEraser").classList.toggle("on", t === "eraser");
-  }
-  document.getElementById("toolPen").addEventListener("click", () => setTool("pen"));
-  document.getElementById("toolEraser").addEventListener("click", () => setTool("eraser"));
-  document.getElementById("padUndo").addEventListener("click", () => {
-    const img = undoStack.pop();
-    if (!img) return;
-    ctx.putImageData(img, 0, 0);
-    commitPad();
-  });
-  document.getElementById("padClear").addEventListener("click", () => {
-    pushUndo();
-    ctx.clearRect(0, 0, PAD, PAD);
-    commitPad();
-  });
-  function syncTools() {
-    pens.querySelectorAll(".pen").forEach((d, i) => d.classList.toggle("sel", i === state.pen.color));
-    bright.value = state.pen.bright;
-    width.value = state.pen.width;
-    document.getElementById("brightVal").textContent = state.pen.bright + "%";
-    document.getElementById("widthVal").textContent = state.pen.width;
-    const dot = document.getElementById("widthDot");
-    const shown = Math.max(2, Math.min(40, state.pen.width));
-    dot.style.width = shown + "px";
-    dot.style.height = shown + "px";
-    dot.style.background = penColor();
-  }
-  function syncPadLook() {
-    const l = state.legends[editing - 1];
-    canvasWrap.style.background = tileBackground(l.color, false) || "var(--btn)";
-    document.getElementById("padStrip").style.background = colorHex(l.color);
+    drag(slider, (e) => {
+      const r = slider.getBoundingClientRect();
+      const y = Math.min(1, Math.max(0, (e.clientY - r.top - 8) / Math.max(1, r.height - 16)));
+      const c = getColour();
+      setColour({ h: c.h, s: c.s, v: 1 - y });
+      sync();
+    });
+    return { sync };
   }
 
-  // ---------- Set Legend dialog ----------
-  const legendScrim = document.getElementById("legendScrim");
-  const legendText = document.getElementById("legendText");
-  const swatches = document.getElementById("swatches");
-  COLORS.forEach(([name, hex]) => {
-    const s = document.createElement("div");
-    s.className = "sw"; s.style.background = hex; s.dataset.color = name;
-    if (name === "none") s.textContent = "NONE";
-    s.addEventListener("click", () => {
-      state.legends[editing - 1].color = name; save(); syncSwatches(); syncPadLook(); renderTile(editing - 1);
-    });
-    swatches.appendChild(s);
-  });
-  function syncSwatches() {
-    const c = state.legends[editing - 1].color;
-    swatches.querySelectorAll(".sw").forEach(s => s.classList.toggle("sel", s.dataset.color === c));
-  }
+  // ---------- Set Legend window ----------
+  const legendScrim = $("legendScrim"), legendText = $("legendText"), legendPreview = $("legendPreview");
+  function paintPreview() { paintTile(legendPreview, work, editing, false); }
   function openLegend(p) {
     editing = p;
-    undoStack = [];
-    drawing = null;
-    document.getElementById("legendTitle").textContent = "SET LEGEND — Page " + p;
-    legendText.value = state.legends[p - 1].text;
-    loadPad(state.legends[p - 1].img);
-    setTool("pen");
-    syncSwatches();
-    syncTools();
-    syncPadLook();
+    work = Object.assign({}, state.legends[p - 1]);
+    $("legendTitle").textContent = "Set Legend — Page " + p;
+    legendText.value = work.text;
+    paintPreview();
     legendScrim.classList.add("open");
   }
-  function closeLegend() { legendText.blur(); legendScrim.classList.remove("open"); render(); }
-  legendText.addEventListener("input", () => {
-    state.legends[editing - 1].text = legendText.value.slice(0, 24); save(); renderTile(editing - 1);
-  });
-  legendText.addEventListener("keydown", (e) => { if (e.key === "Enter") legendText.blur(); });
-  document.getElementById("legendDone").addEventListener("click", closeLegend);
+  function closeLegend() { legendText.blur(); legendScrim.classList.remove("open"); work = null; render(); }
+  function commitLegend() { state.legends[editing - 1] = Object.assign({}, work); save(); closeLegend(); }
+  legendText.addEventListener("input", () => { work.text = legendText.value.slice(0, 24); paintPreview(); });
+  legendText.addEventListener("keydown", (e) => { if (e.key === "Enter") commitLegend(); });
+  $("legendEnter").addEventListener("click", commitLegend);
+  $("legendX").addEventListener("click", closeLegend);
+  $("skPicture").addEventListener("click", () => { legendText.blur(); openPicture(); });
+  $("skHalo").addEventListener("click", () => { legendText.blur(); openHalo(); });
+  $("skRemoveHalo").addEventListener("click", () => { work.halo = ""; paintPreview(); });
+  $("skClear").addEventListener("click", () => { work.text = ""; work.img = ""; legendText.value = ""; paintPreview(); });
+  $("btnLegend").addEventListener("click", () => { legendMode = !legendMode; render(); });
 
-  document.getElementById("btnLegend").addEventListener("click", () => { legendMode = !legendMode; render(); });
+  // ---------- Halo ----------
+  const haloScrim = $("haloScrim");
+  let haloColour = { h: 0, s: 1, v: 1 };
+  const haloPicker = makePicker($("haloPicker"), () => haloColour, (c) => { haloColour = c; showHalo(); });
+  function showHalo() { const h = hsvHex(haloColour); $("haloSwatch").style.background = h; $("haloVal").textContent = h.toUpperCase(); }
+  function openHalo() {
+    haloColour = work.halo ? hexToHsv(work.halo) : { h: 120, s: 1, v: 1 };
+    showHalo();
+    haloScrim.classList.add("open");
+    requestAnimationFrame(haloPicker.sync);
+  }
+  $("haloEnter").addEventListener("click", () => { work.halo = hsvHex(haloColour); paintPreview(); haloScrim.classList.remove("open"); });
+  $("haloRemove").addEventListener("click", () => { work.halo = ""; paintPreview(); haloScrim.classList.remove("open"); });
+  $("haloX").addEventListener("click", () => haloScrim.classList.remove("open"));
 
-  // ---------- Setup ----------
-  const setupScrim = document.getElementById("setupScrim");
-  const backupText = document.getElementById("backupText");
-  const backupMsg = document.getElementById("backupMsg");
-  function openSetup() {
-    document.getElementById("chVal").textContent = state.channel;
-    backupText.value = JSON.stringify(state);
-    backupMsg.textContent = "";
-    refreshMidiUI();
-    setupScrim.classList.add("open");
+  // ---------- Picture editor ----------
+  const picScrim = $("picScrim"), pad = $("pad"), ctx = pad.getContext("2d"), padWrap = $("padWrap"), padArea = $("padArea");
+  let tool = "pen", stroke = null, padW = 480, padH = 440;
+
+  const penHex = () => hsvHex(state.pen);
+  function tileAspect() {
+    const r = tiles[0].getBoundingClientRect();
+    return (r.width > 0 && r.height > 0) ? r.width / r.height : 1.1;
   }
-  document.getElementById("btnSetup").addEventListener("click", openSetup);
-  document.getElementById("setupDone").addEventListener("click", () => setupScrim.classList.remove("open"));
-  setupScrim.addEventListener("click", (e) => { if (e.target === setupScrim) setupScrim.classList.remove("open"); });
-  document.getElementById("outSel").addEventListener("change", (e) => {
-    state.outputId = e.target.value; save(); refreshMidiUI();
-  });
-  function setCh(v) {
-    state.channel = Math.min(16, Math.max(1, v)); save();
-    document.getElementById("chVal").textContent = state.channel;
-    refreshMidiUI();
+  function layoutPad() {
+    const a = tileAspect();
+    const r = padArea.getBoundingClientRect();
+    const maxW = r.width - 28, maxH = r.height - 28;
+    let w = maxW, h = w / a;
+    if (h > maxH) { h = maxH; w = h * a; }
+    padWrap.style.width = Math.floor(w) + "px";
+    padWrap.style.height = Math.floor(h) + "px";
+    padWrap.classList.toggle("halo", !!work.halo);
+    if (work.halo) padWrap.style.setProperty("--halo", work.halo);
   }
-  document.getElementById("chDown").addEventListener("click", () => setCh(state.channel - 1));
-  document.getElementById("chUp").addEventListener("click", () => setCh(state.channel + 1));
-  document.getElementById("backupCopy").addEventListener("click", () => {
-    backupText.value = JSON.stringify(state);
-    backupText.select();
-    const done = () => { backupMsg.textContent = "COPIED"; };
-    const fallback = () => { try { document.execCommand("copy"); done(); } catch (e) { backupMsg.textContent = "SELECT AND COPY"; } };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(backupText.value).then(done, fallback);
-    } else { fallback(); }
+  function openPicture() {
+    const a = tileAspect();
+    padW = 480; padH = Math.round(480 / a);
+    pad.width = padW; pad.height = padH;
+    ctx.clearRect(0, 0, padW, padH);
+    $("picTitle").textContent = "Page " + editing + (work.text ? " — " + work.text : "");
+    picScrim.classList.add("open");
+    layoutPad();
+    if (work.img) {
+      const im = new Image();
+      im.onload = () => {   // fit the stored picture (contain)
+        const k = Math.min(padW / im.width, padH / im.height);
+        const w = im.width * k, h = im.height * k;
+        ctx.drawImage(im, (padW - w) / 2, (padH - h) / 2, w, h);
+      };
+      im.src = work.img;
+    }
+    setTool("pen"); syncPenUI();
+  }
+  function padIsEmpty() {
+    try { const d = ctx.getImageData(0, 0, padW, padH).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return false; return true; }
+    catch (e) { return false; }
+  }
+  function closePicture() { closePops(); picScrim.classList.remove("open"); }
+  $("picEnter").addEventListener("click", () => {
+    work.img = padIsEmpty() ? "" : pad.toDataURL("image/png");
+    closePicture();
+    commitLegend();          // Enter stores the legend, as on Titan
   });
-  document.getElementById("backupLoad").addEventListener("click", () => {
-    try {
-      state = normalize(JSON.parse(backupText.value));
-      save(); render(); refreshMidiUI();
-      document.getElementById("chVal").textContent = state.channel;
-      backupMsg.textContent = "LOADED";
-    } catch (e) {
-      backupMsg.textContent = "INVALID DATA";
+  $("picX").addEventListener("click", () => { closePicture(); paintPreview(); });
+  $("tabKeyboard").addEventListener("click", () => { closePicture(); paintPreview(); legendText.focus(); });
+  $("tabDraw").addEventListener("click", () => {});
+
+  function setTool(t) {
+    tool = t;
+    $("toolPen").classList.toggle("sel", t === "pen");
+    $("toolEraser").classList.toggle("sel", t === "eraser");
+  }
+  $("toolPen").addEventListener("click", () => setTool("pen"));
+  $("toolEraser").addEventListener("click", () => setTool("eraser"));
+  $("toolClear").addEventListener("click", () => { ctx.clearRect(0, 0, padW, padH); });
+
+  // stroke width: size is in on-button pixels, scaled to the pad resolution
+  const lineW = () => Math.max(1, state.pen.size * padW / Math.max(60, tiles[0].getBoundingClientRect().width));
+  function padPt(e) { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) * padW / r.width, y: (e.clientY - r.top) * padH / r.height }; }
+  pad.addEventListener("pointerdown", (e) => {
+    if (stroke) return;
+    closePops();
+    e.preventDefault();
+    try { pad.setPointerCapture(e.pointerId); } catch (x) {}
+    ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = lineW();
+    ctx.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
+    ctx.strokeStyle = ctx.fillStyle = tool === "eraser" ? "#000" : penHex();
+    const p = padPt(e);
+    stroke = { id: e.pointerId, last: p, mid: p };
+    ctx.beginPath(); ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill();
+  });
+  pad.addEventListener("pointermove", (e) => {
+    if (!stroke || e.pointerId !== stroke.id) return;
+    e.preventDefault();
+    const evs = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+    for (const ev of evs) {
+      const p = padPt(ev), mid = { x: (stroke.last.x + p.x) / 2, y: (stroke.last.y + p.y) / 2 };
+      ctx.beginPath(); ctx.moveTo(stroke.mid.x, stroke.mid.y); ctx.quadraticCurveTo(stroke.last.x, stroke.last.y, mid.x, mid.y); ctx.stroke();
+      stroke.last = p; stroke.mid = mid;
     }
   });
+  const endStroke = (e) => {
+    if (!stroke || e.pointerId !== stroke.id) return;
+    ctx.beginPath(); ctx.moveTo(stroke.mid.x, stroke.mid.y); ctx.lineTo(stroke.last.x, stroke.last.y); ctx.stroke();
+    ctx.globalCompositeOperation = "source-over";
+    stroke = null;
+  };
+  pad.addEventListener("pointerup", endStroke); pad.addEventListener("pointercancel", endStroke);
 
-  // fit #app to the real visible height (some in-app browsers report 100vh/dvh wrongly)
+  // size / colour popovers (open to the left of the side buttons)
+  const sizePop = $("sizePop"), colourPop = $("colourPop");
+  function closePops() { sizePop.classList.remove("open"); colourPop.classList.remove("open"); }
+  function placePop(pop, btn) {
+    pop.classList.add("open");
+    const b = btn.getBoundingClientRect(), p = pop.getBoundingClientRect();
+    const h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--app-h")) || window.innerHeight;
+    pop.style.left = Math.max(8, b.left - p.width - 10) + "px";
+    pop.style.top = Math.max(8, Math.min(h - p.height - 8, b.top + b.height / 2 - p.height / 2)) + "px";
+  }
+  $("toolSize").addEventListener("click", () => {
+    if (sizePop.classList.contains("open")) { closePops(); return; }
+    closePops(); $("sizeRange").value = state.pen.size; placePop(sizePop, $("toolSize"));
+  });
+  $("sizeRange").addEventListener("input", (e) => { state.pen.size = parseInt(e.target.value, 10); save(); syncPenUI(); });
+  const penPicker = makePicker($("penPicker"), () => state.pen,
+                               (c) => { state.pen.h = c.h; state.pen.s = c.s; state.pen.v = c.v; save(); syncPenUI(); });
+  $("toolColour").addEventListener("click", () => {
+    if (colourPop.classList.contains("open")) { closePops(); return; }
+    closePops(); setTool("pen"); placePop(colourPop, $("toolColour")); penPicker.sync();
+  });
+  function syncPenUI() {
+    const c = penHex();
+    $("colourScribble").setAttribute("stroke", c);
+    $("penSwatch").style.background = c;
+    $("penVal").textContent = c.toUpperCase() + "  I " + Math.round(state.pen.v * 100) + "%";
+    const d = Math.max(3, Math.min(48, state.pen.size));
+    [$("sizeDot"), $("sizePrev")].forEach(el => { el.style.width = d + "px"; el.style.height = d + "px"; el.style.display = "block"; });
+    $("sizePrev").style.background = c;
+  }
+  padArea.addEventListener("pointerdown", (e) => { if (e.target === padArea) closePops(); });
+
+  // ---------- Setup ----------
+  const setupScrim = $("setupScrim"), backupText = $("backupText"), backupMsg = $("backupMsg");
+  $("btnSetup").addEventListener("click", () => {
+    $("chVal").textContent = state.channel; backupText.value = JSON.stringify(state); backupMsg.textContent = "";
+    refreshMidiUI(); setupScrim.classList.add("open");
+  });
+  $("setupX").addEventListener("click", () => setupScrim.classList.remove("open"));
+  $("outSel").addEventListener("change", (e) => { state.outputId = e.target.value; save(); refreshMidiUI(); });
+  function setCh(v) { state.channel = Math.min(16, Math.max(1, v)); save(); $("chVal").textContent = state.channel; refreshMidiUI(); }
+  $("chDown").addEventListener("click", () => setCh(state.channel - 1));
+  $("chUp").addEventListener("click", () => setCh(state.channel + 1));
+  $("backupCopy").addEventListener("click", () => {
+    backupText.value = JSON.stringify(state); backupText.select();
+    const done = () => { backupMsg.textContent = "COPIED"; };
+    const fb = () => { try { document.execCommand("copy"); done(); } catch (e) { backupMsg.textContent = "SELECT AND COPY"; } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(backupText.value).then(done, fb); else fb();
+  });
+  $("backupLoad").addEventListener("click", () => {
+    try { state = normalize(JSON.parse(backupText.value)); save(); render(); refreshMidiUI(); $("chVal").textContent = state.channel; backupMsg.textContent = "LOADED"; }
+    catch (e) { backupMsg.textContent = "INVALID DATA"; }
+  });
+
+  // ---------- viewport ----------
   function fitHeight() {
     const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
     document.documentElement.style.setProperty("--app-h", Math.round(h) + "px");
+    if (picScrim.classList.contains("open") && work) layoutPad();
   }
   fitHeight();
   window.addEventListener("resize", fitHeight);
   window.addEventListener("orientationchange", () => setTimeout(fitHeight, 300));
   if (window.visualViewport) window.visualViewport.addEventListener("resize", fitHeight);
   setTimeout(fitHeight, 500);
-
-  // block pinch / double-tap zoom
   document.addEventListener("gesturestart", (e) => e.preventDefault());
   document.addEventListener("dblclick", (e) => e.preventDefault());
 
