@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>15 FADER WING V1.0</title>
+<title>15 FADER WING V0.0</title>
 <style>
   :root{
     --bg:#16171a; --panel:#202226; --panel2:#2a2d32; --line:#3a3e45;
@@ -34,17 +34,6 @@
   .hbtn.on{background:var(--red);border-color:var(--red)}
   .hbtn.arm{background:var(--red);border-color:var(--red);animation:blink .35s steps(2) infinite}
   @keyframes blink{50%{filter:brightness(.6)}}
-
-  .seg.tgt button{height:38px;padding:0 12px;font-size:13px;letter-spacing:.04em}
-  .seg.tgt button.sel[data-t="quartz"]{background:var(--blue);color:#fff}
-  .seg.tgt button.sel[data-t="code"]{background:var(--green);color:#06210f}
-  .pg{display:none;align-items:center;gap:6px}
-  body.code .pg{display:flex}
-  .hbtn.sm{min-width:52px;padding:0 8px}
-  .pgv{min-width:34px;text-align:center;font-weight:900;font-size:20px;color:var(--green);font-variant-numeric:tabular-nums}
-  body.code .btn.swop{opacity:.25;pointer-events:none}
-  body.code .q-only{display:none}
-  body:not(.code) .c-only{display:none}
 
   /* ===== Wing ===== */
   main{flex:1;display:flex;gap:5px;padding:8px 8px 10px;min-height:0;touch-action:none}
@@ -91,16 +80,10 @@
 </head>
 <body>
 <header>
-  <div class="title">15 FADER WING<small>V1.0</small></div>
+  <div class="title">15 FADER WING<small>V0.0</small></div>
   <div class="led" id="led"></div>
   <div class="status" id="status">MIDI 初期化中…</div>
   <select id="out"></select>
-  <div class="seg tgt" id="tgt"><button data-t="quartz">QUARTZ</button><button data-t="code">CODE</button></div>
-  <div class="pg" id="pg">
-    <div class="hbtn sm" id="pgDn">PG −</div>
-    <div class="pgv" id="pgVal">1</div>
-    <div class="hbtn sm" id="pgUp">PG +</div>
-  </div>
   <div class="spacer"></div>
   <div class="hbtn" id="btnResend">RESEND</div>
   <div class="hbtn" id="btnAll0">ALL 0</div>
@@ -114,21 +97,13 @@
   <div class="sheet">
     <h2>設定</h2>
     <div class="row"><label>MIDI チャンネル</label><input id="sCh" type="number" min="1" max="16" inputmode="numeric"></div>
-    <div class="row q-only"><label>フェーダー CC 開始番号</label><input id="sCC" type="number" min="0" max="113" inputmode="numeric"></div>
-    <div class="row q-only"><label>FLASH ノート開始番号</label><input id="sFl" type="number" min="0" max="113" inputmode="numeric"></div>
-    <div class="row q-only"><label>SWOP ノート開始番号</label><input id="sSw" type="number" min="0" max="113" inputmode="numeric"></div>
+    <div class="row"><label>フェーダー CC 開始番号</label><input id="sCC" type="number" min="0" max="113" inputmode="numeric"></div>
+    <div class="row"><label>FLASH ノート開始番号</label><input id="sFl" type="number" min="0" max="113" inputmode="numeric"></div>
+    <div class="row"><label>SWOP ノート開始番号</label><input id="sSw" type="number" min="0" max="113" inputmode="numeric"></div>
     <div class="row"><label>フェーダー操作</label>
       <div class="seg" id="sMode"><button data-m="rel">相対（跳ばない）</button><button data-m="abs">絶対（触った位置）</button></div>
     </div>
-    <p class="note c-only">
-      <b>CODE MINI 1000T モード</b><br>
-      ・卓側：MIDI Setting（取説 8.2.3）で MIDI mode を <b>Slave Mode</b> にしてください。<br>
-      ・卓の MIDI Channel は 0〜15 表記です（卓の 0 ＝ このアプリの ch 1）。<br>
-      ・フェーダー n は「9n pp ll」（pp＝プレイバック番号 0〜14、ll＝レベル 0〜127）で、今表示中のページのプレイバック1〜15を動かします。Fixed のプレイバックは MIDI では動きません。<br>
-      ・PG −/＋ は「Bn (ページ−1) 00」でページを切り替えます（1〜40）。<br>
-      ・FLASH は押している間レベル 127 を送り、離すとフェーダーの値に戻します。SWOP は CODE では使えません。
-    </p>
-    <p class="note q-only">
+    <p class="note">
       ・フェーダーはCC（値0〜127）、FLASH / SWOPはノート（押す＝Note On 127、離す＝Note Off）を送ります。<br>
       ・Quartz側：System → Triggers で Mapping を作り、Item（Set Level / Flash / Swop など）を選んで Learn のまま各操作子を動かせば割り当てられます。<br>
       ・卓からの戻りはないため、卓側でレベルを触った後は RESEND で今の値を送り直してください。<br>
@@ -143,12 +118,11 @@
 (() => {
   'use strict';
   const N = 15;
-  const KEY = 'wing15_v0';  // V0.0 の設定・値をそのまま引き継ぐ
+  const KEY = 'wing15_v0';
 
   // ---------- 設定 ----------
   const cfg = {
     ch: 1, ccBase: 1, flashBase: 36, swopBase: 60, mode: 'rel', outId: '',
-    target: 'quartz', page: 1,
     names: Array.from({length: N}, (_, i) => 'PB ' + (i + 1))
   };
   const vals = new Array(N).fill(0);   // 0..127 (float)
@@ -235,13 +209,7 @@
     ledTimer = setTimeout(() => led.className = out ? 'led ok' : 'led', 60);
   }
   const chByte = () => (Math.max(1, Math.min(16, cfg.ch | 0)) - 1);
-  const isCode = () => cfg.target === 'code';
-  // QUARTZ: CC (ccBase + i) / CODE MINI 1000T: 9n pp ll（pp=0〜14, ll=レベル）
-  const sendFader = (i, v) => isCode()
-    ? send([0x90 | chByte(), i & 127, v & 127])
-    : send([0xB0 | chByte(), (cfg.ccBase + i) & 127, v & 127]);
-  // CODE MINI 1000T: ページ切替 Bn (page-1) 00
-  const sendPage = p => send([0xB0 | chByte(), (p - 1) & 127, 0x00]);
+  const sendCC = (i, v) => send([0xB0 | chByte(), (cfg.ccBase + i) & 127, v & 127]);
   const noteOn = n => send([0x90 | chByte(), n & 127, 127]);
   const noteOff = n => send([0x80 | chByte(), n & 127, 0]);
 
@@ -267,12 +235,8 @@
     strips.push(s);
     s.name.textContent = cfg.names[i];
     bindFader(i, s);
-    bindButton(s.flash,
-      () => { if (isCode()) sendFader(i, 127); else noteOn(cfg.flashBase + i); },
-      () => { if (isCode()) { sent[i] = Math.round(vals[i]); sendFader(i, sent[i]); } else noteOff(cfg.flashBase + i); });
-    bindButton(s.swop,
-      () => { if (!isCode()) noteOn(cfg.swopBase + i); },
-      () => { if (!isCode()) noteOff(cfg.swopBase + i); });
+    bindButton(s.flash, () => cfg.flashBase + i);
+    bindButton(s.swop, () => cfg.swopBase + i);
     bindName(i, s.name);
   }
 
@@ -289,7 +253,7 @@
     vals[i] = v;
     render(i);
     const iv = Math.round(v);
-    if (force || iv !== sent[i]) { sent[i] = iv; sendFader(i, iv); }
+    if (force || iv !== sent[i]) { sent[i] = iv; sendCC(i, iv); }
     save();
   }
 
@@ -329,20 +293,20 @@
   }
 
   // ---------- FLASH / SWOP（押している間だけ） ----------
-  function bindButton(btn, onDown, onUp) {
-    let pid = null;
+  function bindButton(btn, noteFn) {
+    let pid = null, note = null;
     btn.addEventListener('pointerdown', e => {
       if (locked || pid !== null) return;
       e.preventDefault();
-      pid = e.pointerId;
+      pid = e.pointerId; note = noteFn();
       try { btn.setPointerCapture(pid); } catch (_) {}
       btn.classList.add('down');
-      onDown();
+      noteOn(note);
     });
     const up = e => {
       if (pid === null || e.pointerId !== pid) return;
       pid = null; btn.classList.remove('down');
-      onUp();
+      noteOff(note);
     };
     btn.addEventListener('pointerup', up);
     btn.addEventListener('pointercancel', up);
@@ -404,14 +368,6 @@
     renderMap();
   }
   function renderMap() {
-    if (isCode()) {
-      let c = '<tr><th>#</th><th>名前</th><th>フェーダー / FLASH</th></tr>';
-      for (let i = 0; i < N; i++) {
-        c += '<tr><td>' + (i + 1) + '</td><td>' + esc(cfg.names[i]) + '</td><td>9n ' + hex(i) + ' ll（PB ' + (i + 1) + '）</td></tr>';
-      }
-      $('#map').innerHTML = c + '<tr><td colspan="3" style="color:var(--dim)">MIDI ch ' + cfg.ch + '（卓の MIDI Channel ' + (cfg.ch - 1) + '）／ページ: Bn (ページ−1) 00</td></tr>';
-      return;
-    }
     let h = '<tr><th>#</th><th>名前</th><th>フェーダー</th><th>FLASH</th><th>SWOP</th></tr>';
     for (let i = 0; i < N; i++) {
       h += '<tr><td>' + (i + 1) + '</td><td>' + esc(cfg.names[i]) + '</td><td>CC ' + (cfg.ccBase + i) +
@@ -419,7 +375,6 @@
     }
     $('#map').innerHTML = h + '<tr><td colspan="5" style="color:var(--dim)">すべて MIDI ch ' + cfg.ch + '</td></tr>';
   }
-  const hex = n => n.toString(16).toUpperCase().padStart(2, '0');
   const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
   function readNum(el, min, max, fallback) {
@@ -443,31 +398,6 @@
   $('#btnClose').addEventListener('click', () => sheet.classList.remove('show'));
   sheet.addEventListener('click', e => { if (e.target === sheet) sheet.classList.remove('show'); });
 
-  // ---------- 送り先（QUARTZ / CODE）とページ ----------
-  const tgt = $('#tgt'), pgVal = $('#pgVal');
-  function applyTarget() {
-    document.body.classList.toggle('code', isCode());
-    [...tgt.children].forEach(b => b.classList.toggle('sel', b.dataset.t === cfg.target));
-    pgVal.textContent = cfg.page;
-    renderMap();
-  }
-  tgt.addEventListener('click', e => {
-    const t = e.target.dataset && e.target.dataset.t;
-    if (!t || t === cfg.target) return;
-    cfg.target = t;
-    sent.fill(-1);   // 切替直後は何も送らない（必要なら RESEND）
-    save(); applyTarget();
-  });
-  function setPage(p) {
-    if (locked || !isCode()) return;
-    cfg.page = Math.max(1, Math.min(40, p));
-    pgVal.textContent = cfg.page;
-    sendPage(cfg.page);
-    save();
-  }
-  $('#pgDn').addEventListener('click', () => setPage(cfg.page - 1));
-  $('#pgUp').addEventListener('click', () => setPage(cfg.page + 1));
-
   // ---------- スクロール・ズーム抑止 ----------
   document.addEventListener('gesturestart', e => e.preventDefault());
   document.addEventListener('touchmove', e => {
@@ -487,10 +417,7 @@
 
   // ---------- 起動 ----------
   load();
-  if (cfg.target !== 'code') cfg.target = 'quartz';
-  cfg.page = Math.max(1, Math.min(40, cfg.page | 0 || 1));
   strips.forEach((s, i) => { s.name.textContent = cfg.names[i]; render(i); });
-  applyTarget();
   initMIDI();
 })();
 </script>
